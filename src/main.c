@@ -7,11 +7,20 @@
 #include "shell.h"
 
 static void exec(const cmd_info *cmd) {
-    char *argv[cmd->argc + 1];
-    memcpy(argv, cmd->argv, sizeof(char *));
-    argv[cmd->argc] = NULL;
+    if (cmd->argc < 2) {
+        fprintf(stderr, "Usage: run [exe] [args]\n");
+        return;
+    }
 
-    fprintf(stderr, "Error %d\n", execvp(cmd_name(cmd), argv));
+    char **argv = malloc((size_t)cmd->argc * sizeof(char *));
+
+    /* Copy argument tokens, ignoring first token */
+    memcpy(argv, cmd->argv + 1, sizeof(char *) * (size_t)cmd->argc);
+
+    /* Set last argument token to NULL for execvp() */
+    *(argv + cmd->argc - 1) = NULL;
+
+    fprintf(stderr, "Error %d\n", execvp(argv[0], argv));
 }
 
 int main(void) {
