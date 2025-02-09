@@ -23,16 +23,24 @@ static void exec(const cmd_info *cmd) {
     fprintf(stderr, "Error %d\n", execvp(argv[0], argv));
 }
 
+static bool cmd_name_equals(const cmd_info *cmd, const char *name) {
+    return !strcasecmp(cmd_name(cmd), name);
+}
+
+static void dispatch(const cmd_info *cmd) {
+    if (cmd_name_equals(cmd, "exit")) {
+        exit(EXIT_SUCCESS);
+
+    } else if (cmd_name_equals(cmd, "run")) {
+        exec(cmd);
+    }
+}
+
 int main(void) {
-    bool should_exit = false;
-
-    while (!should_exit) {
+    while (true) {
         cmd_info cmd = cmd_input("> ");
-        should_exit = !strcasecmp("exit", cmd_name(&cmd));
-
-        if (!should_exit) {
-            exec(&cmd);
-        }
+        
+        dispatch(&cmd);
 
         cmd_free(&cmd);
     }
