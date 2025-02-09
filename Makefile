@@ -13,7 +13,7 @@ all: $(EXE)
 # Build executable
 $(EXE): $(SRC)
 	mkdir -p $(BUILD_DIR)
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $^ -o $@
 
 .PHONY: clean
 clean:
