@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -Wall -Werror -Wextra -Wconversion -Wpedantic -Wstrict-prototypes -std=gnu17
+CFLAGS := -Wall -Werror -Wextra -Wconversion -Wpedantic -Wstrict-prototypes -std=gnu17 -g -DDEBUG -O0
 
 SRC_DIR := ./src
 BUILD_DIR := ./build
