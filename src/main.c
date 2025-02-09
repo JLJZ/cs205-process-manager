@@ -33,6 +33,8 @@ static void dispatch(const cmd_info *cmd) {
 
     } else if (cmd_name_equals(cmd, "run")) {
         exec(cmd);
+    } else {
+        fprintf(stderr, "Unknown command %s\n", cmd_name(cmd));
     }
 }
 
