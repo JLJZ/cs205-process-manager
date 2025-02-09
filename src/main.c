@@ -3,8 +3,12 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 #include "shell.h"
+#include "executor.h"
+
+static executor *e = NULL;
 
 static void exec(const cmd_info *cmd) {
     if (cmd->argc < 2) {
@@ -19,8 +23,8 @@ static void exec(const cmd_info *cmd) {
 
     /* Set last argument token to NULL for execvp() */
     *(argv + cmd->argc - 1) = NULL;
-
-    fprintf(stderr, "Error %d\n", execvp(argv[0], argv));
+    
+    executor_enqueue_task(e, argv[0], argv);
 }
 
 static bool cmd_name_equals(const cmd_info *cmd, const char *name) {
@@ -29,19 +33,23 @@ static bool cmd_name_equals(const cmd_info *cmd, const char *name) {
 
 static void dispatch(const cmd_info *cmd) {
     if (cmd_name_equals(cmd, "exit")) {
+        executor_send_command(e, "exit");
         exit(EXIT_SUCCESS);
 
-    } else if (cmd_name_equals(cmd, "run")) {
+    } else if(cmd_name_equals(cmd, "run")) {
         exec(cmd);
+
     } else {
         fprintf(stderr, "Unknown command %s\n", cmd_name(cmd));
     }
 }
 
 int main(void) {
+    e = executor_init();
+
     while (true) {
         cmd_info cmd = cmd_input("> ");
-        
+
         dispatch(&cmd);
 
         cmd_free(&cmd);
