@@ -4,6 +4,14 @@
 
 #include "shell.h"
 
+static void trim_newline(char **str) {
+    char *s = *str;
+    size_t n = strlen(s);
+    while (n > 0 && (s[n] == '\0' || s[n] == '\r' || s[n] == '\n')) {
+        s[n--] = '\0';
+    }
+}
+
 /**
  * @brief Parse string into a new cmd_info
  * 
@@ -12,6 +20,7 @@
  */
 static cmd_info cmd_parse(const char *cmd_string) {
     char *str_buffer = strdup(cmd_string);
+    trim_newline(&str_buffer);
 
     int argv_size = 16;
     int argc = 0;
