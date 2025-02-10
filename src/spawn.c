@@ -126,7 +126,7 @@ spawner *sp_init(void) {
     sp->processes = NULL;
     
     if (pipe(sp->pipe) < 0) {
-        perror("pipe() init failed");
+        error("pipe() init failed");
         goto err;
     }
 
@@ -134,7 +134,7 @@ spawner *sp_init(void) {
 
     switch (pid) {
     case -1:
-        perror("fork() failed");
+        error("fork() failed");
         goto err;
 
     case 0:
