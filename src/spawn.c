@@ -61,7 +61,7 @@ static char **unpack_argv(char *data, size_t size) {
         tokens = realloc(tokens, sizeof(char **) * (len + 1));
 
         /* Jump to the next string at the end of this current string */
-        i += strlen(data) + 1;
+        i += strlen(token) + 1;
     }
     tokens[len] = NULL;
     
