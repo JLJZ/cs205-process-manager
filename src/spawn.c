@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
+#include <assert.h>
 
 #include "spawn.h"
 
@@ -10,9 +11,17 @@
 
 #define BUFFER_SIZE 64
 
+typedef struct process process;
+struct process {
+    pid_t pid;
+    process *previous;
+    process *next;
+};
+
 struct spawner {
     int pipe[2];
     pid_t server_pid;
+    process *processes;
 };
 
 static char *pack_argv(const char *const argv[], size_t *size) {
@@ -32,34 +41,90 @@ static char *pack_argv(const char *const argv[], size_t *size) {
     return bytes;
 }
 
-// /**
-//  * @brief Segments \0 delimited data into an array of strings.
-//  * 
-//  * @param data buffer containing tokens delimited by \0 
-//  * @param size size of data
-//  * @return const char** array of argument tokens
-//  */
-// static const char **unpack_argv(const char *data, size_t size) {
-//     const char** tokens = calloc(1, sizeof(char *));
-//     size_t len = 0;
-//     size_t i = 0;
+/**
+ * @brief Segments \0 delimited data into an array of strings.
+ * 
+ * @param data buffer containing tokens delimited by \0 
+ * @param size size of data
+ * @return const char** array of argument tokens
+ */
+static char **unpack_argv(char *data, size_t size) {
+    char** tokens = calloc(1, sizeof(char *));
+    size_t len = 0;
+    size_t i = 0;
     
-//     while (i < size) {
-//         const char *token = data + i;
-//         tokens[len++] = token;
+    while (i < size) {
+        char *token = data + i;
+        tokens[len++] = token;
 
-//         /* Allocate 1 more than required for the NULL sentinel value */
-//         tokens = realloc(tokens, sizeof(char **) * (len + 1));
+        /* Allocate 1 more than required for the NULL sentinel value */
+        tokens = realloc(tokens, sizeof(char **) * (len + 1));
 
-//         /* Jump to the next string at the end of this current string */
-//         i += strlen(data) + 2;
-//     }
-//     tokens[len] = NULL;
+        /* Jump to the next string at the end of this current string */
+        i += strlen(data) + 1;
+    }
+    tokens[len] = NULL;
     
-//     return tokens;
-// }
+    return tokens;
+}
 
-static char *read_pipe(int fd) {
+static void handle_sigterm(int signum) {
+    printf("Terminated process SIGNAL (%d)\n", signum);
+}
+
+static void sp_server_spawn_process(spawner *sp, char *const argv[]) {
+    pid_t pid = fork();
+
+    switch (pid) {
+    case -1:
+        error("fork() failed");
+        return;
+
+    case 0: {
+        /* Register child termination handler */
+        struct sigaction action;
+        action.sa_handler = handle_sigterm;
+        sigemptyset(&action.sa_mask);
+        action.sa_flags = 0;
+        sigaction(SIGTERM, NULL, &action);
+
+        puts("Child process spawned");
+        pause();
+        puts("Child process started");
+        if (execvp(argv[0], argv) < 0) {
+            error("exec() failed");
+            return;
+        }
+        break;
+    }
+    default: {
+        /* Register child termination handler */
+        struct sigaction action;
+        action.sa_handler = handle_sigterm;
+        sigemptyset(&action.sa_mask);
+        action.sa_flags = 0;
+        sigaction(SIGTERM, NULL, &action);
+
+        /* Enqueue process */
+        process *p = calloc(1, sizeof(p));
+        p->pid = pid;
+        p->previous = NULL;
+        p->next = NULL;
+        if (sp->processes != NULL) {
+            sp->processes->previous = p;
+            p->next = sp->processes;
+        }
+        sp->processes = p;
+
+        /* Continue paused child */
+        kill(pid, SIGCONT);
+        break;
+    }
+    }
+}
+
+static size_t read_pipe(int fd, char **out) {
+    assert(*out == NULL);
     char *str = NULL;
     ssize_t size = 0;
 
@@ -80,14 +145,16 @@ static char *read_pipe(int fd) {
     }
     
     if (read_size == -1) {
-        free(str);
         error("read() pipe failed on server");
-        return NULL;
+        if (str != NULL) {
+            free(str);
+        }
+        str = NULL;
+        size = 0;
     }
-
-    *(str + size) = '\0';
     
-    return str;
+    *out = str;
+    return (size_t)size;
 }
 
 static void sp_server_init(spawner *sp) {
@@ -97,12 +164,24 @@ static void sp_server_init(spawner *sp) {
     }
     
     while (1) {
-        char *cmd_str = read_pipe(sp->pipe[0]);
-        if (cmd_str == NULL) {
+        char *cmd_str = NULL;
+        size_t size = read_pipe(sp->pipe[0], &cmd_str);
+
+        if (size < 1) {
             continue;
         }
-        printf("Command: %s\n", cmd_str);
 
+        char **argv = unpack_argv(cmd_str, size);
+        
+        printf("Command:");
+        for (size_t i = 0; argv[i] != NULL; ++i) {
+            printf(" %s", argv[i]);
+        }
+        printf("\n");
+
+        sp_server_spawn_process(sp, argv);
+        
+        free(argv);
         free(cmd_str);
     }
     
@@ -156,11 +235,13 @@ err:
 
 void sp_spawn(spawner *sp, const char *const argv[]) {
     size_t size;
-    const char* data = pack_argv(argv, &size);
+    char* data = pack_argv(argv, &size);
     
     if (write(sp->pipe[1], data, size) < 0) {
         error("write() pipe failed on client");
     }
+
+    free(data);
 }
 
 void sp_free(spawner *sp) {
@@ -169,4 +250,5 @@ void sp_free(spawner *sp) {
             error("failed to kill server");
         }
     }
+    free(sp);
 }
