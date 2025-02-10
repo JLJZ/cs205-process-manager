@@ -15,6 +15,50 @@ struct spawner {
     pid_t server_pid;
 };
 
+static char *pack_argv(const char *const argv[], size_t *size) {
+    char *bytes = NULL;
+    size_t length = 0;
+    
+    for (int i = 0; argv[i] != NULL; ++i) {
+        const char *token = argv[i];
+        size_t token_len = strlen(argv[i]) + 1;
+        bytes = realloc(bytes, length + token_len);
+        memcpy(bytes + length, token, token_len);
+        length += token_len;
+    }
+    
+    *size = length;
+    
+    return bytes;
+}
+
+// /**
+//  * @brief Segments \0 delimited data into an array of strings.
+//  * 
+//  * @param data buffer containing tokens delimited by \0 
+//  * @param size size of data
+//  * @return const char** array of argument tokens
+//  */
+// static const char **unpack_argv(const char *data, size_t size) {
+//     const char** tokens = calloc(1, sizeof(char *));
+//     size_t len = 0;
+//     size_t i = 0;
+    
+//     while (i < size) {
+//         const char *token = data + i;
+//         tokens[len++] = token;
+
+//         /* Allocate 1 more than required for the NULL sentinel value */
+//         tokens = realloc(tokens, sizeof(char **) * (len + 1));
+
+//         /* Jump to the next string at the end of this current string */
+//         i += strlen(data) + 2;
+//     }
+//     tokens[len] = NULL;
+    
+//     return tokens;
+// }
+
 static char *read_pipe(int fd) {
     char *str = NULL;
     ssize_t size = 0;
@@ -46,14 +90,14 @@ static char *read_pipe(int fd) {
     return str;
 }
 
-static void sp_init_server(spawner *sp) {
+static void sp_server_init(spawner *sp) {
     if (close(sp->pipe[1]) < 0) {
         error("close() pipe failed on server init");
         return;
     }
     
     while (1) {
-        char *cmd_str = read_pipe_command(sp->pipe[0]);
+        char *cmd_str = read_pipe(sp->pipe[0]);
         if (cmd_str == NULL) {
             continue;
         }
@@ -70,7 +114,7 @@ static void sp_init_server(spawner *sp) {
     exit(EXIT_SUCCESS);
 }
 
-static void sp_init_client(spawner *sp) {
+static void sp_client_init(spawner *sp) {
     if (close(sp->pipe[0]) < 0) {
         error("close() pipe failed on client init");
         return;
@@ -94,33 +138,16 @@ spawner *sp_init(void) {
 
     case 0:
         sp->server_pid = getpid();
-        sp_init_server(sp);
+        sp_server_init(sp);
         break;
 
     default:
         sp->server_pid = pid;
-        sp_init_client(sp);
+        sp_client_init(sp);
         break;
     }
     
     return sp;
-}
-
-static char *pack_argv(const char *const argv[], size_t *size) {
-    char *bytes = NULL;
-    size_t length = 0;
-    
-    for (int i = 0; argv[i] != NULL; ++i) {
-        const char *token = argv[i];
-        size_t token_len = strlen(argv[i]) + 1;
-        bytes = realloc(bytes, length + token_len);
-        memcpy(bytes + length, token, token_len);
-        length += token_len;
-    }
-    
-    *size = length;
-    
-    return bytes;
 }
 
 void sp_spawn(spawner *sp, const char *const argv[]) {
