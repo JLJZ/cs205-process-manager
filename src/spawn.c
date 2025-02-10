@@ -123,10 +123,11 @@ static void sp_client_init(spawner *sp) {
 
 spawner *sp_init(void) {
     spawner *sp = calloc(1, sizeof(spawner));
+    sp->processes = NULL;
     
     if (pipe(sp->pipe) < 0) {
         perror("pipe() init failed");
-        return NULL;
+        goto err;
     }
 
     pid_t pid = fork();
@@ -134,7 +135,7 @@ spawner *sp_init(void) {
     switch (pid) {
     case -1:
         perror("fork() failed");
-        return NULL;
+        goto err;
 
     case 0:
         sp->server_pid = getpid();
@@ -148,6 +149,9 @@ spawner *sp_init(void) {
     }
     
     return sp;
+err:
+    free(sp);
+    return NULL;
 }
 
 void sp_spawn(spawner *sp, const char *const argv[]) {
