@@ -68,11 +68,18 @@ static char **unpack_argv(char *data, size_t size) {
     return tokens;
 }
 
-static void handle_sigterm(int signum) {
-    printf("Terminated process SIGNAL (%d)\n", signum);
-}
+// static void handle_sigterm(int signum) {
+//     printf("Terminated process SIGNAL (%d)\n", signum);
+// }
 
 static void sp_server_spawn_process(spawner *sp, char *const argv[]) {
+    
+    /* Block child continuation signal */
+    sigset_t setmask;
+    sigemptyset(&setmask);
+    sigaddset(&setmask, SIGCONT);
+    // sigaddset(&setmask, SIGCHLD);
+
     pid_t pid = fork();
 
     switch (pid) {
@@ -81,29 +88,21 @@ static void sp_server_spawn_process(spawner *sp, char *const argv[]) {
         return;
 
     case 0: {
-        /* Register child termination handler */
-        struct sigaction action;
-        action.sa_handler = handle_sigterm;
-        sigemptyset(&action.sa_mask);
-        action.sa_flags = 0;
-        sigaction(SIGTERM, NULL, &action);
-
         puts("Child process spawned");
-        pause();
+        sigprocmask(SIG_BLOCK, &setmask, NULL);
         puts("Child process started");
         if (execvp(argv[0], argv) < 0) {
             error("exec() failed");
-            return;
         }
-        break;
+        exit(EXIT_FAILURE);
     }
+
     default: {
-        /* Register child termination handler */
-        struct sigaction action;
-        action.sa_handler = handle_sigterm;
-        sigemptyset(&action.sa_mask);
-        action.sa_flags = 0;
-        sigaction(SIGTERM, NULL, &action);
+        // struct sigaction action;
+        // sigemptyset(&action.sa_mask);
+        // action.sa_handler = handle_sigterm;
+        // sigaction(SIGCHLD, &action, NULL);
+        // action.sa_flags = 0;
 
         /* Enqueue process */
         process *p = calloc(1, sizeof(p));
@@ -117,7 +116,7 @@ static void sp_server_spawn_process(spawner *sp, char *const argv[]) {
         sp->processes = p;
 
         /* Continue paused child */
-        kill(pid, SIGCONT);
+        // kill(pid, SIGCONT);
         break;
     }
     }
