@@ -23,7 +23,7 @@ static char **to_argv(char *tokens, size_t count) {
 }
 
 void args_parse(args *a, const char *str) {
-    char *buffer = strdup(str);
+    char *buffer = calloc(strlen(str) + 1, sizeof(char));
     size_t len = 0;
     
     /* Add '\0' after every token and trim additonal whitespace between them. */
@@ -40,10 +40,7 @@ void args_parse(args *a, const char *str) {
         }
     }
     
-    if (buffer[len] != '\0') {
-        buffer[len] = '\0';
-        len++;
-    }
+    len++;
     
     buffer = realloc(buffer, len * sizeof(char));
     
