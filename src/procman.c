@@ -139,10 +139,20 @@ static size_t read_pipe(int fd, char **out) {
     return (size_t)size;
 }
 
+static void pm_list_processes(procman *pm) {
+    process *p = pm->processes;
+    while (p != NULL) {
+        printf("%d\n", p->pid);
+        p = p->next;
+    }
+}
+
 static void dispatch(procman *pm, args *a) {
     const char *command = a->argv[0];
     if (!strcmp(command, "run")) {
         pm_server_spawn_process(pm, a->argv + 1);
+    } else if (!strcmp(command, "list")) {
+        pm_list_processes(pm);
     } else {
         fprintf(stderr, "Unrecognised command\n");
     }
