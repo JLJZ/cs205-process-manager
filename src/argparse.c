@@ -43,12 +43,16 @@ void args_parse(args *a, const char *str) {
     
     buffer = realloc(buffer, len * sizeof(char));
     
-    a->tokens = buffer;
-    a->length = len;
-    a->argv = to_argv(buffer, len);
+    args_cast(a, buffer, len);
+}
+
+void args_cast(args *a, char *bytes, size_t length) {
+    a->bytes = bytes;
+    a->length = length;
+    a->argv = to_argv(bytes, length);
 }
 
 void args_free(args *a) {
     free(a->argv);
-    free(a->tokens);
+    free((void *)a->bytes);
 }
