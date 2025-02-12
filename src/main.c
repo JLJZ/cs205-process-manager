@@ -24,8 +24,8 @@ static char *read_line(void) {
     }
     
     /* Delete newline character */
-    input[read_len] = '\0';
-    
+    input[read_len - 1] = '\0';
+
     return input;
 }
 
