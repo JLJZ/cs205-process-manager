@@ -8,6 +8,7 @@
 #include <stdbool.h>
 
 #include "procman.h"
+#include "argparse.h"
 
 #define error(msg) do { perror("[procman] " msg); } while (0);
 
@@ -41,33 +42,6 @@ static char *pack_argv(const char *const argv[], size_t *size) {
     *size = length;
     
     return bytes;
-}
-
-/**
- * @brief Segments \0 delimited data into an array of strings.
- * 
- * @param data buffer containing tokens delimited by \0 
- * @param size size of data
- * @return const char** array of argument tokens
- */
-static char **unpack_argv(char *data, size_t size) {
-    char** tokens = calloc(1, sizeof(char *));
-    size_t len = 0;
-    size_t i = 0;
-    
-    while (i < size) {
-        char *token = data + i;
-        tokens[len++] = token;
-
-        /* Allocate 1 more than required for the NULL sentinel value */
-        tokens = realloc(tokens, sizeof(char **) * (len + 1));
-
-        /* Jump to the next string at the end of this current string */
-        i += strlen(token) + 1;
-    }
-    tokens[len] = NULL;
-    
-    return tokens;
 }
 
 static void handle_sigchld(int signum, siginfo_t *siginfo, void *ucontext) {
@@ -181,6 +155,10 @@ static size_t read_pipe(int fd, char **out) {
     return (size_t)size;
 }
 
+// static void dispatch(const args *a) {
+//     const char *command = a->argv[0];
+// }
+
 static void pm_server_init(procman *sp) {
     if (close(sp->pipe[1]) < 0) {
         error("close() pipe failed on server init");
@@ -191,22 +169,23 @@ static void pm_server_init(procman *sp) {
         char *cmd_str = NULL;
         size_t size = read_pipe(sp->pipe[0], &cmd_str);
 
+        /* Ignore further processing on errors */
         if (size < 1) {
             continue;
         }
-
-        char **argv = unpack_argv(cmd_str, size);
+        
+        args a;
+        args_cast(&a, cmd_str, size);
         
         printf("Command:");
-        for (size_t i = 0; argv[i] != NULL; ++i) {
-            printf(" %s", argv[i]);
+        for (size_t i = 0; a.argv[i] != NULL; ++i) {
+            printf(" %s", a.argv[i]);
         }
         printf("\n");
 
-        pm_server_spawn_process(sp, argv);
+        pm_server_spawn_process(sp, a.argv);
         
-        free(argv);
-        free(cmd_str);
+        args_free(&a);
     }
     
     if (close(sp->pipe[0]) < 0) {
