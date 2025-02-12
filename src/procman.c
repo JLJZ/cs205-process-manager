@@ -235,9 +235,7 @@ void pm_shutdown(procman *sp, unsigned int timeout) {
     pid_t pid = 0;
     pid = waitpid(sp->server_pid, &status, WNOHANG);
     
-    int i = 0;
     do {
-        printf("TRY %d\n", i);
         if (kill(sp->server_pid, SIGTERM) < 0) {
             if (kill(sp->server_pid, SIGKILL) < 0) {
                 error("error sending kill signals to server");
@@ -246,8 +244,6 @@ void pm_shutdown(procman *sp, unsigned int timeout) {
 
         pid = waitpid(sp->server_pid, &status, WNOHANG);
         sleep(1);
-
-        puts("Again");
 
     } while (pid != sp->server_pid && timeout-- > 0);
     
