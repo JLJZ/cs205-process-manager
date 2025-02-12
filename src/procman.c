@@ -14,11 +14,11 @@
 #define BUFFER_SIZE 64
 
 typedef struct process process;
-struct process {
+typedef struct process {
     pid_t pid;
     process *previous;
     process *next;
-};
+} process;
 
 struct procman {
     int pipe[2];
@@ -187,7 +187,7 @@ static void pm_server_init(procman *sp) {
         return;
     }
     
-    while (1) {
+    while (true) {
         char *cmd_str = NULL;
         size_t size = read_pipe(sp->pipe[0], &cmd_str);
 
