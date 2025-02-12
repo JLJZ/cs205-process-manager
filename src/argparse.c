@@ -7,6 +7,10 @@ static char **to_argv(char *tokens, size_t count) {
     char **argv = calloc(count + 1, sizeof(char *));
     argv[count] = NULL;
     
+    if (count == 0) {
+        return argv;
+    }
+    
     size_t i = 0;
     char *iter = tokens;
     
