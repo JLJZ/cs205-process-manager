@@ -4,6 +4,8 @@
 #include <string.h>
 #include <signal.h>
 #include <assert.h>
+#include <errno.h>
+#include <stdbool.h>
 
 #include "spawn.h"
 
@@ -68,9 +70,32 @@ static char **unpack_argv(char *data, size_t size) {
     return tokens;
 }
 
-// static void handle_sigterm(int signum) {
-//     printf("Terminated process SIGNAL (%d)\n", signum);
-// }
+static void handle_sigchld(int signum, siginfo_t *siginfo, void *ucontext) {
+    assert(signum == SIGCHLD);
+
+    (void) ucontext;
+
+    switch (siginfo->si_code)
+    {
+    case CLD_KILLED:
+    case CLD_DUMPED:
+    case CLD_EXITED:
+        printf("Terminated PID (%d)\n", siginfo->si_pid);
+        break;
+
+    case CLD_STOPPED:
+        printf("Stopped PID (%d)\n", siginfo->si_pid);
+        break;
+
+    case CLD_CONTINUED:
+    case CLD_TRAPPED:
+        break;
+
+    default: /* Unknown code */
+        assert(false);
+        break;
+    }
+}
 
 static void sp_server_spawn_process(spawner *sp, char *const argv[]) {
     
@@ -78,7 +103,6 @@ static void sp_server_spawn_process(spawner *sp, char *const argv[]) {
     sigset_t setmask;
     sigemptyset(&setmask);
     sigaddset(&setmask, SIGCONT);
-    // sigaddset(&setmask, SIGCHLD);
 
     pid_t pid = fork();
 
@@ -98,11 +122,12 @@ static void sp_server_spawn_process(spawner *sp, char *const argv[]) {
     }
 
     default: {
-        // struct sigaction action;
-        // sigemptyset(&action.sa_mask);
-        // action.sa_handler = handle_sigterm;
-        // sigaction(SIGCHLD, &action, NULL);
-        // action.sa_flags = 0;
+        struct sigaction action;
+        sigemptyset(&action.sa_mask);
+        action.sa_sigaction = handle_sigchld;
+        /* Restart reads that are interrupted and fill siginfo for handler */
+        action.sa_flags = SA_RESTART | SA_SIGINFO;  
+        sigaction(SIGCHLD, &action, NULL);
 
         /* Enqueue process */
         process *p = calloc(1, sizeof(p));
@@ -116,7 +141,7 @@ static void sp_server_spawn_process(spawner *sp, char *const argv[]) {
         sp->processes = p;
 
         /* Continue paused child */
-        // kill(pid, SIGCONT);
+        kill(pid, SIGCONT);
         break;
     }
     }
