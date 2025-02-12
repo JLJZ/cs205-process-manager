@@ -11,7 +11,7 @@ static char **to_argv(char *tokens, size_t count) {
     char *iter = tokens;
     
     while (*iter) {
-        argv[i] = iter;
+        argv[i++] = iter;
         iter += strlen(iter) + 1;
     }
     
