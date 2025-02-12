@@ -13,32 +13,32 @@
  * 
  * @return char* Command string
  */
-static void read_command(args *a) {
+static char *read_line(void) {
     char *input = NULL;
     size_t len = 0;
     
-    if (getline(&input, &len, stdin) < 0) {
+    ssize_t read_len = getline(&input, &len, stdin);
+
+    if (read_len < 0) {
         exit(EXIT_FAILURE);
     }
-
-    args_parse(a, input);
     
-    free(input);
+    /* Delete newline character */
+    input[read_len] = '\0';
+    
+    return input;
 }
 
 int main(void) {
     procman *pm = pm_init();
 
     while (true) {
-        // cmd_info cmd = cmd_input("> ");
         printf("cs205$ ");
+        char *command = read_line();
+        
+        pm_execute(pm, command);
 
-        args a;
-        read_command(&a);
-
-        pm_spawn(pm, (const char *const *)a.argv);
-
-        args_free(&a);
+        free(command);
     }
     
     pm_free(pm);

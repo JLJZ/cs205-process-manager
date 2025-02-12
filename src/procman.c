@@ -27,23 +27,6 @@ struct procman {
     process *processes;
 };
 
-static char *pack_argv(const char *const argv[], size_t *size) {
-    char *bytes = NULL;
-    size_t length = 0;
-    
-    for (int i = 0; argv[i] != NULL; ++i) {
-        const char *token = argv[i];
-        size_t token_len = strlen(argv[i]) + 1;
-        bytes = realloc(bytes, length + token_len);
-        memcpy(bytes + length, token, token_len);
-        length += token_len;
-    }
-    
-    *size = length;
-    
-    return bytes;
-}
-
 static void handle_sigchld(int signum, siginfo_t *siginfo, void *ucontext) {
     assert(signum == SIGCHLD);
 
@@ -155,10 +138,6 @@ static size_t read_pipe(int fd, char **out) {
     return (size_t)size;
 }
 
-// static void dispatch(const args *a) {
-//     const char *command = a->argv[0];
-// }
-
 static void pm_server_init(procman *sp) {
     if (close(sp->pipe[1]) < 0) {
         error("close() pipe failed on server init");
@@ -236,15 +215,15 @@ err:
     return NULL;
 }
 
-void pm_spawn(procman *sp, const char *const argv[]) {
-    size_t size;
-    char* data = pack_argv(argv, &size);
+void pm_execute(procman *sp, const char *cmd_string) {
+    args cmd;
+    args_parse(&cmd, cmd_string);
     
-    if (write(sp->pipe[1], data, size) < 0) {
+    if (write(sp->pipe[1], cmd.bytes, cmd.length) < 0) {
         error("write() pipe failed on client");
     }
-
-    free(data);
+    
+    args_free(&cmd);
 }
 
 void pm_free(procman *sp) {

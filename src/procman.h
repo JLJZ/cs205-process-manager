@@ -7,8 +7,8 @@ typedef struct procman procman;
 
 procman *pm_init(void);
 
-void pm_free(procman *sp);
+void pm_free(procman *pm);
 
-void pm_spawn(procman *sp, const char *const argv[]);
+void pm_execute(procman *pm, const char *cmd_string);
 
 #endif
