@@ -7,7 +7,7 @@ typedef struct procman procman;
 
 procman *pm_init(void);
 
-void pm_free(procman *pm);
+void pm_shutdown(procman *pm, unsigned int retries);
 
 void pm_execute(procman *pm, const char *cmd_string);
 

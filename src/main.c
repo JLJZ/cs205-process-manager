@@ -8,6 +8,8 @@
 #include "procman.h"
 #include "argparse.h"
 
+#define SHUTDOWN_TIMEOUT 5
+
 /**
  * @brief Read a command from stdin
  * 
@@ -36,12 +38,17 @@ int main(void) {
         printf("cs205$ ");
         char *command = read_line();
         
+        if (!strcmp("exit", command)) {
+            free(command);
+            break;
+        }
+        
         pm_execute(pm, command);
 
         free(command);
     }
     
-    pm_free(pm);
+    pm_shutdown(pm, SHUTDOWN_TIMEOUT);
 
     return 0;
 }
