@@ -7,7 +7,7 @@
 
 #include "shell.h"
 #include "executor.h"
-#include "spawn.h"
+#include "procman.h"
 
 // static executor *e = NULL;
 
@@ -49,7 +49,7 @@ int main(void) {
     // e = executor_init();
     
     // const char *cmd[] = { "echo", "HELLO", "WORLD", NULL };
-    spawner *sp = sp_init();
+    procman *pm = pm_init();
     // sp_spawn(sp, cmd);
 
     while (true) {
@@ -60,12 +60,12 @@ int main(void) {
         memcpy(argv, cmd.argv, sizeof(char *) * (size_t)cmd.argc);
         argv[cmd.argc] = NULL;
         
-        sp_spawn(sp, argv);
+        pm_spawn(pm, argv);
 
         cmd_free(&cmd);
     }
     
-    sp_free(sp);
+    pm_free(pm);
 
     return 0;
 }

@@ -7,9 +7,9 @@
 #include <errno.h>
 #include <stdbool.h>
 
-#include "spawn.h"
+#include "procman.h"
 
-#define error(msg) do { perror("[spawner] " msg); } while (0);
+#define error(msg) do { perror("[procman] " msg); } while (0);
 
 #define BUFFER_SIZE 64
 
@@ -20,7 +20,7 @@ struct process {
     process *next;
 };
 
-struct spawner {
+struct procman {
     int pipe[2];
     pid_t server_pid;
     process *processes;
@@ -97,7 +97,7 @@ static void handle_sigchld(int signum, siginfo_t *siginfo, void *ucontext) {
     }
 }
 
-static void sp_server_spawn_process(spawner *sp, char *const argv[]) {
+static void pm_server_spawn_process(procman *pm, char *const argv[]) {
     
     /* Block child continuation signal */
     sigset_t setmask;
@@ -134,11 +134,11 @@ static void sp_server_spawn_process(spawner *sp, char *const argv[]) {
         p->pid = pid;
         p->previous = NULL;
         p->next = NULL;
-        if (sp->processes != NULL) {
-            sp->processes->previous = p;
-            p->next = sp->processes;
+        if (pm->processes != NULL) {
+            pm->processes->previous = p;
+            p->next = pm->processes;
         }
-        sp->processes = p;
+        pm->processes = p;
 
         /* Continue paused child */
         kill(pid, SIGCONT);
@@ -181,7 +181,7 @@ static size_t read_pipe(int fd, char **out) {
     return (size_t)size;
 }
 
-static void sp_server_init(spawner *sp) {
+static void pm_server_init(procman *sp) {
     if (close(sp->pipe[1]) < 0) {
         error("close() pipe failed on server init");
         return;
@@ -203,7 +203,7 @@ static void sp_server_init(spawner *sp) {
         }
         printf("\n");
 
-        sp_server_spawn_process(sp, argv);
+        pm_server_spawn_process(sp, argv);
         
         free(argv);
         free(cmd_str);
@@ -217,15 +217,15 @@ static void sp_server_init(spawner *sp) {
     exit(EXIT_SUCCESS);
 }
 
-static void sp_client_init(spawner *sp) {
+static void pm_client_init(procman *sp) {
     if (close(sp->pipe[0]) < 0) {
         error("close() pipe failed on client init");
         return;
     }
 }
 
-spawner *sp_init(void) {
-    spawner *sp = calloc(1, sizeof(spawner));
+procman *pm_init(void) {
+    procman *sp = calloc(1, sizeof(procman));
     sp->processes = NULL;
     
     if (pipe(sp->pipe) < 0) {
@@ -242,12 +242,12 @@ spawner *sp_init(void) {
 
     case 0:
         sp->server_pid = getpid();
-        sp_server_init(sp);
+        pm_server_init(sp);
         break;
 
     default:
         sp->server_pid = pid;
-        sp_client_init(sp);
+        pm_client_init(sp);
         break;
     }
     
@@ -257,7 +257,7 @@ err:
     return NULL;
 }
 
-void sp_spawn(spawner *sp, const char *const argv[]) {
+void pm_spawn(procman *sp, const char *const argv[]) {
     size_t size;
     char* data = pack_argv(argv, &size);
     
@@ -268,7 +268,7 @@ void sp_spawn(spawner *sp, const char *const argv[]) {
     free(data);
 }
 
-void sp_free(spawner *sp) {
+void pm_free(procman *sp) {
     if (kill(sp->server_pid, SIGTERM) < 0) {
         if (kill(sp->server_pid, SIGKILL) < 0) {
             error("failed to kill server");
