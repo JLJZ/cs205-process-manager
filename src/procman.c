@@ -138,6 +138,15 @@ static size_t read_pipe(int fd, char **out) {
     return (size_t)size;
 }
 
+static void dispatch(procman *pm, args *a) {
+    const char *command = a->argv[0];
+    if (!strcmp(command, "run")) {
+        pm_server_spawn_process(pm, a->argv + 1);
+    } else {
+        fprintf(stderr, "Unrecognised command\n");
+    }
+}
+
 static void pm_server_init(procman *sp) {
     if (close(sp->pipe[1]) < 0) {
         error("close() pipe failed on server init");
@@ -155,14 +164,8 @@ static void pm_server_init(procman *sp) {
         
         args a;
         args_cast(&a, cmd_str, size);
-        
-        printf("Command:");
-        for (size_t i = 0; a.argv[i] != NULL; ++i) {
-            printf(" %s", a.argv[i]);
-        }
-        printf("\n");
 
-        pm_server_spawn_process(sp, a.argv);
+        dispatch(sp, &a);
         
         args_free(&a);
     }
