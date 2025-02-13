@@ -35,6 +35,10 @@ struct procman {
     int pipe[2];
     pid_t server_pid;
     process *processes;
+
+    process **processes_running;
+    size_t processes_running_max;
+    size_t processes_running_count;
 };
 
 static process *pm_find_process(procman *pm, pid_t pid) {
@@ -193,10 +197,8 @@ static size_t read_pipe(int fd, char **out) {
 }
 
 static void pm_list_processes(procman *pm) {
-    process *p = pm->processes;
-    while (p != NULL) {
-        printf("%d\n", p->pid);
-        p = p->next;
+    for (process *p = pm->processes; p != NULL; p = p->next) {
+        printf("%d,%d\n", p->pid, p->status);
     }
 }
 
