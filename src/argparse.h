@@ -4,7 +4,8 @@
 #include <stddef.h>
 
 typedef struct args {
-    size_t length;
+    size_t bytes_size;
+    size_t token_count;
     char *bytes;
     char **argv;
 } args;
@@ -16,9 +17,9 @@ void args_parse(args *a, const char *str);
  * 
  * @param a destination
  * @param bytes source
- * @param length number of bytes
+ * @param size number of bytes
  */
-void args_cast(args *a, char *bytes, size_t length);
+void args_cast(args *a, char *bytes, size_t size);
 
 void args_free(args *a);
 

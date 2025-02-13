@@ -49,6 +49,8 @@ static process *pm_find_process(procman *pm, pid_t pid) {
 }
 
 static void terminate_process(process *p) {
+    assert(p);
+
     if (p->status == TERMINATED) {
         error("process already terminated");
 
@@ -207,15 +209,36 @@ static pid_t parse_pid(const char *pid) {
     return num;
 }
 
+static bool ensure_args_length(args *a, size_t n, const char *message) {
+    if (a->token_count < n) {
+        fwrite(message, sizeof(char), strlen(message) + 1, stderr);
+        return false;
+    }
+    
+    return true;
+}
+
 static void dispatch(procman *pm, args *a) {
+    /* No-op when empty command received */
+    if (a->token_count == 0) {
+        return;
+    }
+
     const char *command = a->argv[0];
+
     if (!strcmp(command, "run")) {
-        pm_server_spawn_process(pm, a->argv + 1);
+        if (ensure_args_length(a, 2, "USAGE: run [program] [arguments]\n")) {
+            pm_server_spawn_process(pm, a->argv + 1);
+        }
 
     } else if (!strcmp(command, "kill")) {
-        pid_t pid = parse_pid(a->argv[1]);
-        process *p = pm_find_process(pm, pid);
-        terminate_process(p);
+        if (ensure_args_length(a, 2, "USAGE: kill [PID]\n")) {
+            pid_t pid = parse_pid(a->argv[1]);
+            process *p = pm_find_process(pm, pid);
+            if (p) {
+                terminate_process(p);
+            }
+        }
 
     } else if (!strcmp(command, "list")) {
         pm_list_processes(pm);
@@ -300,7 +323,7 @@ void pm_execute(procman *sp, const char *cmd_string) {
     args cmd;
     args_parse(&cmd, cmd_string);
     
-    if (write(sp->pipe[1], cmd.bytes, cmd.length) < 0) {
+    if (write(sp->pipe[1], cmd.bytes, cmd.bytes_size) < 0) {
         error("write() pipe failed on client");
     }
     
