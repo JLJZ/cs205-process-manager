@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <sys/wait.h>
+#include <sys/prctl.h>
 
 #include "procman.h"
 #include "argparse.h"
@@ -70,6 +71,17 @@ static void pm_server_spawn_process(procman *pm, char *const argv[]) {
         return;
 
     case 0: {
+        /* Send SIGTERM to child when parent dies  */
+        if (prctl(PR_SET_PDEATHSIG, SIGTERM) < 0) {
+            error("Failed to link parent death signal");
+            exit(EXIT_FAILURE);
+        }
+        
+        if (getppid() != pm->server_pid) {
+            /* Parent died before prctl() */
+            exit(EXIT_FAILURE);
+        }
+
         puts("Child process spawned");
         sigprocmask(SIG_BLOCK, &setmask, NULL);
         puts("Child process started");
