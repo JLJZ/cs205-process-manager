@@ -16,9 +16,17 @@
 
 #define BUFFER_SIZE 64
 
+typedef enum pstatus {
+    RUNNING,
+    READY,
+    STOPPED,
+    TERMINATED,
+} pstatus;
+
 typedef struct process process;
 typedef struct process {
     pid_t pid;
+    pstatus status;
     process *previous;
     process *next;
 } process;
@@ -28,6 +36,35 @@ struct procman {
     pid_t server_pid;
     process *processes;
 };
+
+static process *pm_find_process(procman *pm, pid_t pid) {
+    for (process *p = pm->processes; p != NULL; p = p->next) {
+        /* Assuming there are never duplicated pid stored */
+        if (p->pid == pid) {
+            return p;
+        }
+    }
+
+    return NULL;
+}
+
+static void terminate_process(process *p) {
+    if (p->status == TERMINATED) {
+        error("process already terminated");
+
+    } else {
+        int status;
+        
+        kill(p->pid, SIGTERM);
+
+        if (waitpid(p->pid, &status, 0) < 0) {
+            error("failed to terminate process");
+        }
+
+        p->status = TERMINATED;
+    }
+
+}
 
 static void handle_sigchld(int signum, siginfo_t *siginfo, void *ucontext) {
     assert(signum == SIGCHLD);
@@ -102,6 +139,7 @@ static void pm_server_spawn_process(procman *pm, char *const argv[]) {
         /* Enqueue process */
         process *p = calloc(1, sizeof(p));
         p->pid = pid;
+        p->status = READY;
         p->previous = NULL;
         p->next = NULL;
         if (pm->processes != NULL) {
@@ -112,6 +150,7 @@ static void pm_server_spawn_process(procman *pm, char *const argv[]) {
 
         /* Continue paused child */
         kill(pid, SIGCONT);
+        p->status = RUNNING;
         break;
     }
     }
@@ -159,12 +198,28 @@ static void pm_list_processes(procman *pm) {
     }
 }
 
+static pid_t parse_pid(const char *pid) {
+    int num = atoi(pid);
+    /* atoi() returns 0 on invalid input but 0 is also an invalid pid for us */
+    if (num == 0) {
+        error("Invalid pid");
+    }
+    return num;
+}
+
 static void dispatch(procman *pm, args *a) {
     const char *command = a->argv[0];
     if (!strcmp(command, "run")) {
         pm_server_spawn_process(pm, a->argv + 1);
+
+    } else if (!strcmp(command, "kill")) {
+        pid_t pid = parse_pid(a->argv[1]);
+        process *p = pm_find_process(pm, pid);
+        terminate_process(p);
+
     } else if (!strcmp(command, "list")) {
         pm_list_processes(pm);
+
     } else {
         fprintf(stderr, "Unrecognised command\n");
     }
