@@ -66,6 +66,64 @@ static void terminate_process(process *p) {
 
 }
 
+static void pm_server_spawn_process(procman *pm, char *const argv[]) {
+
+    pid_t pid = fork();
+
+    switch (pid) {
+    case -1:
+        error("fork() failed");
+        return;
+
+    case 0: {
+
+        /* Send SIGTERM to child when parent dies  */
+        if (prctl(PR_SET_PDEATHSIG, SIGTERM) < 0) {
+            error("Failed to link parent death signal");
+            exit(EXIT_FAILURE);
+        }
+        
+        if (getppid() != pm->server_pid) {
+            /* Parent died before prctl() */
+            exit(EXIT_FAILURE);
+        }
+
+        puts("Child process spawned");
+
+        if (raise(SIGSTOP) == 0) {
+            puts("Child process started");
+
+            if (execvp(argv[0], argv) < 0) {
+                error("exec() failed");
+            }
+        }
+
+        exit(EXIT_FAILURE);
+    }
+
+    default: {
+
+         /* Sleep for 1 second to allow child to spawn and suspend.*/
+         /* Yes, it may suffer race conditions but highly unlikely */
+         /* for my assignment. Simple is best right.               */
+        sleep(1);
+
+        /* Enqueue process */
+        process *p = malloc(sizeof(process));
+        p->pid = pid;
+        p->status = READY;
+        p->previous = NULL;
+        p->next = NULL;
+        if (pm->processes != NULL) {
+            pm->processes->previous = p;
+            p->next = pm->processes;
+        }
+        pm->processes = p;
+        break;
+    }
+    }
+}
+
 
 static void pm_server_reap_terminated_process(procman *pm) {
     int status = 0;
@@ -152,64 +210,6 @@ static bool ensure_args_length(args *a, size_t n, const char *message) {
     }
     
     return true;
-}
-
-static void pm_server_spawn_process(procman *pm, char *const argv[]) {
-
-    pid_t pid = fork();
-
-    switch (pid) {
-    case -1:
-        error("fork() failed");
-        return;
-
-    case 0: {
-
-        /* Send SIGTERM to child when parent dies  */
-        if (prctl(PR_SET_PDEATHSIG, SIGTERM) < 0) {
-            error("Failed to link parent death signal");
-            exit(EXIT_FAILURE);
-        }
-        
-        if (getppid() != pm->server_pid) {
-            /* Parent died before prctl() */
-            exit(EXIT_FAILURE);
-        }
-
-        puts("Child process spawned");
-
-        if (raise(SIGSTOP) == 0) {
-            puts("Child process started");
-
-            if (execvp(argv[0], argv) < 0) {
-                error("exec() failed");
-            }
-        }
-
-        exit(EXIT_FAILURE);
-    }
-
-    default: {
-
-         /* Sleep for 1 second to allow child to spawn and suspend.*/
-         /* Yes, it may suffer race conditions but highly unlikely */
-         /* for my assignment. Simple is best right.               */
-        sleep(1);
-
-        /* Enqueue process */
-        process *p = malloc(sizeof(process));
-        p->pid = pid;
-        p->status = READY;
-        p->previous = NULL;
-        p->next = NULL;
-        if (pm->processes != NULL) {
-            pm->processes->previous = p;
-            p->next = pm->processes;
-        }
-        pm->processes = p;
-        break;
-    }
-    }
 }
 
 static pid_t parse_pid(const char *pid) {
