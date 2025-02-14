@@ -89,10 +89,11 @@ static void pm_server_spawn_process(procman *pm, char *const argv[]) {
     }
 
     default: {
-
-         /* Sleep for 1 second to allow child to spawn and suspend.*/
-         /* Yes, it may suffer race conditions but highly unlikely */
-         /* for my assignment. Simple is best right.               */
+        /*
+         * Sleep for 1 second to allow child to spawn and suspend.
+         * Yes, it may suffer race conditions but highly unlikely
+         * for my assignment. Simple is best right.
+         */
         sleep(1);
 
         /* Enqueue process */
