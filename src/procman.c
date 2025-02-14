@@ -20,13 +20,6 @@
 /* Linked to server source code */
 extern void pm_server_init(procman *pm);
 
-static void pm_client_init(procman *pm) {
-    if (close(pm->pipe[0]) < 0) {
-        error("close() pipe failed on client init");
-        return;
-    }
-}
-
 procman *pm_init(size_t max_running_processes) {
     procman *pm = calloc(1, sizeof(procman));
     pm->processes = NULL;
@@ -63,7 +56,9 @@ procman *pm_init(size_t max_running_processes) {
 
     default:
         pm->server_pid = pid;
-        pm_client_init(pm);
+        if (close(pm->pipe[0]) < 0) {
+            error("close() pipe failed on client init");
+        }
         break;
     }
     
