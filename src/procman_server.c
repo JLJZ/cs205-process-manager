@@ -46,7 +46,7 @@ static process *pm_find_process(procman *pm, pid_t pid) {
  ******************************************************************************/
 
 
-static void terminate_process(process *p) {
+static void pm_server_terminate_process(process *p) {
     assert(p);
 
     if (p->status == TERMINATED) {
@@ -266,7 +266,7 @@ static void dispatch(procman *pm, args *a) {
             pid_t pid = parse_pid(a->argv[1]);
             process *p = pm_find_process(pm, pid);
             if (p) {
-                terminate_process(p);
+                pm_server_terminate_process(p);
             }
         }
 
