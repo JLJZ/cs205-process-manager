@@ -47,23 +47,10 @@ static process *pm_find_process(procman *pm, pid_t pid) {
 
 
 static void pm_server_terminate_process(process *p) {
-    assert(p);
-
-    if (p->status == TERMINATED) {
-        error("process already terminated");
-
-    } else {
-        int status;
-        
+    if (p->status != TERMINATED) {
         kill(p->pid, SIGTERM);
-
-        if (waitpid(p->pid, &status, 0) < 0) {
-            error("failed to terminate process");
-        }
-
         p->status = TERMINATED;
     }
-
 }
 
 static void pm_server_spawn_process(procman *pm, char *const argv[]) {
@@ -143,6 +130,75 @@ static void pm_server_stop_process(procman *pm, process *p) {
     p->status = STOPPED;
 }
 
+
+/******************************************************************************
+ *                              COMMAND DISPATCHER                            *
+ ******************************************************************************/
+
+
+static bool ensure_args_length(args *a, size_t n, const char *message) {
+    if (a->token_count < n) {
+        fwrite(message, sizeof(char), strlen(message) + 1, stderr);
+        return false;
+    }
+    
+    return true;
+}
+
+static pid_t parse_pid(const char *pid) {
+    int num = atoi(pid);
+    /* atoi() returns 0 on invalid input but 0 is also an invalid pid for us */
+    if (num == 0) {
+        error("Invalid pid");
+    }
+    return num;
+}
+
+static void dispatch(procman *pm, args *a) {
+    /* No-op when empty command received */
+    if (a->token_count == 0) {
+        return;
+    }
+
+    const char *command = a->argv[0];
+
+    if (!strcmp(command, "run")) {
+        if (ensure_args_length(a, 2, "USAGE: run [program] [arguments]\n")) {
+            pm_server_spawn_process(pm, a->argv + 1);
+        }
+
+    } else if (!strcmp(command, "stop")) {
+        if (ensure_args_length(a, 2, "USAGE: stop [PID]\n")) {
+            pid_t pid = parse_pid(a->argv[1]);
+            process *p = pm_find_process(pm, pid);
+            if (p) {
+                pm_server_stop_process(pm, p);
+            }
+        }
+
+    } else if (!strcmp(command, "kill")) {
+        if (ensure_args_length(a, 2, "USAGE: kill [PID]\n")) {
+            pid_t pid = parse_pid(a->argv[1]);
+            process *p = pm_find_process(pm, pid);
+            if (p) {
+                pm_server_terminate_process(p);
+            }
+        }
+
+    } else if (!strcmp(command, "list")) {
+        pm_list_processes(pm);
+
+    } else {
+        fprintf(stderr, "Unrecognised command\n");
+    }
+}
+
+
+/******************************************************************************
+ *                             MAIN-LOOP PROCEDURES                           * 
+ ******************************************************************************/
+
+
 static void pm_server_reap_terminated_process(procman *pm) {
     int status = 0;
 
@@ -217,69 +273,6 @@ static void pm_server_reschedule_processes(procman *pm) {
 
 
 /******************************************************************************
- *                              COMMAND DISPATCHER                            *
- ******************************************************************************/
-
-
-static bool ensure_args_length(args *a, size_t n, const char *message) {
-    if (a->token_count < n) {
-        fwrite(message, sizeof(char), strlen(message) + 1, stderr);
-        return false;
-    }
-    
-    return true;
-}
-
-static pid_t parse_pid(const char *pid) {
-    int num = atoi(pid);
-    /* atoi() returns 0 on invalid input but 0 is also an invalid pid for us */
-    if (num == 0) {
-        error("Invalid pid");
-    }
-    return num;
-}
-
-static void dispatch(procman *pm, args *a) {
-    /* No-op when empty command received */
-    if (a->token_count == 0) {
-        return;
-    }
-
-    const char *command = a->argv[0];
-
-    if (!strcmp(command, "run")) {
-        if (ensure_args_length(a, 2, "USAGE: run [program] [arguments]\n")) {
-            pm_server_spawn_process(pm, a->argv + 1);
-        }
-
-    } else if (!strcmp(command, "stop")) {
-        if (ensure_args_length(a, 2, "USAGE: stop [PID]\n")) {
-            pid_t pid = parse_pid(a->argv[1]);
-            process *p = pm_find_process(pm, pid);
-            if (p) {
-                pm_server_stop_process(pm, p);
-            }
-        }
-
-    } else if (!strcmp(command, "kill")) {
-        if (ensure_args_length(a, 2, "USAGE: kill [PID]\n")) {
-            pid_t pid = parse_pid(a->argv[1]);
-            process *p = pm_find_process(pm, pid);
-            if (p) {
-                pm_server_terminate_process(p);
-            }
-        }
-
-    } else if (!strcmp(command, "list")) {
-        pm_list_processes(pm);
-
-    } else {
-        fprintf(stderr, "Unrecognised command\n");
-    }
-}
-
-
-/******************************************************************************
  *                                INITIALISER                                 * 
  ******************************************************************************/
 
@@ -327,6 +320,8 @@ extern void pm_server_init(procman *pm) {
         return;
     }
     
+    /* Main server loop */
+
     while (true) {
         char *cmd_str = NULL;
         size_t size = read_pipe(pm->pipe[0], &cmd_str);
