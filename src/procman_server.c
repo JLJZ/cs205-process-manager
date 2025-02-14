@@ -124,6 +124,24 @@ static void pm_server_spawn_process(procman *pm, char *const argv[]) {
     }
 }
 
+static void pm_server_stop_process(procman *pm, process *p) {
+    if (p->status == TERMINATED || p->status == STOPPED) {
+        return;
+    }
+    
+    if (p->status == RUNNING) {
+        for (size_t i = 0; i < pm->processes_running_max; ++i) {
+            if (pm->processes_running[i] == p) {
+                pm->processes_running = NULL;
+                break;
+            }
+        }
+    }
+    
+    kill(p->pid, SIGSTOP);
+
+    p->status = STOPPED;
+}
 
 static void pm_server_reap_terminated_process(procman *pm) {
     int status = 0;
@@ -232,6 +250,15 @@ static void dispatch(procman *pm, args *a) {
     if (!strcmp(command, "run")) {
         if (ensure_args_length(a, 2, "USAGE: run [program] [arguments]\n")) {
             pm_server_spawn_process(pm, a->argv + 1);
+        }
+
+    } else if (!strcmp(command, "stop")) {
+        if (ensure_args_length(a, 2, "USAGE: stop [PID]\n")) {
+            pid_t pid = parse_pid(a->argv[1]);
+            process *p = pm_find_process(pm, pid);
+            if (p) {
+                pm_server_stop_process(pm, p);
+            }
         }
 
     } else if (!strcmp(command, "kill")) {
