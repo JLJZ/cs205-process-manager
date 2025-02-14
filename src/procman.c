@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <fcntl.h>
 #include <sys/wait.h>
 #include <sys/prctl.h>
 
@@ -72,39 +73,7 @@ static void terminate_process(process *p) {
 
 }
 
-static void handle_sigchld(int signum, siginfo_t *siginfo, void *ucontext) {
-    assert(signum == SIGCHLD);
-
-    (void) ucontext;
-
-    switch (siginfo->si_code)
-    {
-    case CLD_KILLED:
-    case CLD_DUMPED:
-    case CLD_EXITED:
-        printf("Terminated PID (%d)\n", siginfo->si_pid);
-        break;
-
-    case CLD_STOPPED:
-        printf("Stopped PID (%d)\n", siginfo->si_pid);
-        break;
-
-    case CLD_CONTINUED:
-    case CLD_TRAPPED:
-        break;
-
-    default: /* Unknown code */
-        assert(false);
-        break;
-    }
-}
-
 static void pm_server_spawn_process(procman *pm, char *const argv[]) {
-    
-    /* Block child continuation signal */
-    sigset_t setmask;
-    sigemptyset(&setmask);
-    sigaddset(&setmask, SIGCONT);
 
     pid_t pid = fork();
 
@@ -114,6 +83,7 @@ static void pm_server_spawn_process(procman *pm, char *const argv[]) {
         return;
 
     case 0: {
+
         /* Send SIGTERM to child when parent dies  */
         if (prctl(PR_SET_PDEATHSIG, SIGTERM) < 0) {
             error("Failed to link parent death signal");
@@ -126,24 +96,27 @@ static void pm_server_spawn_process(procman *pm, char *const argv[]) {
         }
 
         puts("Child process spawned");
-        sigprocmask(SIG_BLOCK, &setmask, NULL);
-        puts("Child process started");
-        if (execvp(argv[0], argv) < 0) {
-            error("exec() failed");
+
+        if (raise(SIGSTOP) == 0) {
+            puts("Child process started");
+
+            if (execvp(argv[0], argv) < 0) {
+                error("exec() failed");
+            }
         }
+
         exit(EXIT_FAILURE);
     }
 
     default: {
-        struct sigaction action;
-        sigemptyset(&action.sa_mask);
-        action.sa_sigaction = handle_sigchld;
-        /* Restart reads that are interrupted and fill siginfo for handler */
-        action.sa_flags = SA_RESTART | SA_SIGINFO;  
-        sigaction(SIGCHLD, &action, NULL);
+
+         /* Sleep for 1 second to allow child to spawn and suspend.*/
+         /* Yes, it may suffer race conditions but highly unlikely */
+         /* for my assignment. Simple is best right.               */
+        sleep(1);
 
         /* Enqueue process */
-        process *p = calloc(1, sizeof(p));
+        process *p = malloc(sizeof(process));
         p->pid = pid;
         p->status = READY;
         p->previous = NULL;
@@ -153,10 +126,6 @@ static void pm_server_spawn_process(procman *pm, char *const argv[]) {
             p->next = pm->processes;
         }
         pm->processes = p;
-
-        /* Continue paused child */
-        kill(pid, SIGCONT);
-        p->status = RUNNING;
         break;
     }
     }
@@ -184,12 +153,14 @@ static size_t read_pipe(int fd, char **out) {
     }
     
     if (read_size == -1) {
-        error("read() pipe failed on server");
-        if (str != NULL) {
-            free(str);
+        if (errno != EAGAIN) { /* Ignore empty pipe */
+            error("read() pipe failed on server");
+            if (str != NULL) {
+                free(str);
+            }
+            str = NULL;
+            size = 0;
         }
-        str = NULL;
-        size = 0;
     }
     
     *out = str;
@@ -250,6 +221,78 @@ static void dispatch(procman *pm, args *a) {
     }
 }
 
+static void pm_server_reap_terminated_process(procman *pm) {
+    int status = 0;
+
+    pid_t pid = waitpid(-1, &status, WNOHANG | WCONTINUED | WSTOPPED);
+    
+    switch (pid) {
+        case -1:
+            if (ECHILD != errno) {  /* Ignore if there's no children */
+                perror("wait() failed");
+            }
+        case 0:
+            return;
+
+        default: {
+            process *p = pm_find_process(pm, pid);
+            
+            if (WIFSTOPPED(status)) {
+                puts("STOPPED");
+
+            } else if (WIFCONTINUED(status)) {
+                puts("CONTINUED");
+
+            } else if (WIFEXITED(status)) {
+                p->status = TERMINATED;
+                puts("EXITED");
+
+            } else if (WIFSIGNALED(status)) {
+                psignal(WTERMSIG(status), "Exit signal");
+
+            } else {
+                perror("Unknown process status after wait()");
+            }
+        }
+    }
+}
+
+static void pm_server_reschedule_processes(procman *pm) {
+    if (pm->processes_running_count < pm->processes_running_max) {
+
+        /* Find earliest ready process */
+        process *p = pm->processes;
+        while (p != NULL) {
+            if (p->status == READY) {
+                break;
+            }
+            p = p->next;
+        }
+        
+        /* No ready processes */
+        if (p == NULL) {
+            return;
+        }
+
+        printf("Ready found (%d)\n", p->pid);
+
+        /* Run the process */
+        for (size_t i = 0; i < pm->processes_running_max; ++i) {
+            if (pm->processes_running[i] == NULL) {
+                pm->processes_running[i] = p;
+                if (kill(p->pid, SIGCONT) < 0) {
+                    error("failed to continue process");
+                    return;
+                }
+                p->status = RUNNING;
+                pm->processes_running_count += 1;
+                puts("REGISTER");
+                break;
+            }
+        }
+    }
+}
+
 static void pm_server_init(procman *pm) {
     if (close(pm->pipe[1]) < 0) {
         error("close() pipe failed on server init");
@@ -259,6 +302,9 @@ static void pm_server_init(procman *pm) {
     while (true) {
         char *cmd_str = NULL;
         size_t size = read_pipe(pm->pipe[0], &cmd_str);
+
+        pm_server_reap_terminated_process(pm);
+        pm_server_reschedule_processes(pm);
 
         /* Ignore further processing on errors */
         if (size < 1) {
@@ -288,11 +334,24 @@ static void pm_client_init(procman *pm) {
     }
 }
 
-procman *pm_init(void) {
+procman *pm_init(size_t max_running_processes) {
     procman *pm = calloc(1, sizeof(procman));
     pm->processes = NULL;
+    pm->processes_running_count = 0;
+    pm->processes_running_max = max_running_processes;
+    pm->processes_running = malloc(max_running_processes * sizeof(process *));
+
+    for (size_t i = 0; i < max_running_processes; i++) {
+        pm->processes_running[i] = NULL;
+    }
+    
     
     if (pipe(pm->pipe) < 0) {
+        error("pipe() init failed");
+        goto err;
+    }
+
+    if (fcntl(pm->pipe[0], F_SETFL, O_NONBLOCK) < 0) {
         error("pipe() init failed");
         goto err;
     }

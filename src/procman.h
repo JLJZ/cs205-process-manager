@@ -5,7 +5,7 @@
 
 typedef struct procman procman;
 
-procman *pm_init(void);
+procman *pm_init(size_t max_running_processes);
 
 void pm_shutdown(procman *pm, unsigned int retries);
 

@@ -8,6 +8,7 @@
 #include "procman.h"
 #include "argparse.h"
 
+#define MAX_RUNNING_PROCESSES 3
 #define SHUTDOWN_TIMEOUT 5
 
 /**
@@ -32,7 +33,7 @@ static char *read_line(void) {
 }
 
 int main(void) {
-    procman *pm = pm_init();
+    procman *pm = pm_init(MAX_RUNNING_PROCESSES);
 
     while (true) {
         printf("cs205$ ");
