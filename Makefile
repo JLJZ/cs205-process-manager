@@ -2,10 +2,10 @@ CC := gcc
 CFLAGS := -Wall -Werror -Wextra -Wconversion -Wpedantic -Wstrict-prototypes -std=gnu17 -g -DDEBUG -O0
 
 SRC_DIR := ./src
-BUILD_DIR := ./build
+BUILD_DIR := ./bin
 EXE := ${BUILD_DIR}/procman
 
-SRC = $(shell find $(SRC_DIR) -name "*.c" -type f)
+SRC = $(SRC_DIR)/main.c $(SRC_DIR)/argparse.c $(SRC_DIR)/procman.c $(SRC_DIR)/procman_server.c
 	
 
 all: $(EXE)
@@ -15,6 +15,17 @@ $(EXE): $(SRC)
 	mkdir -p $(BUILD_DIR)
 	$(CC) $(CFLAGS) $^ -o $@
 
+prog: $(SRC_DIR)/prog.c
+	mkdir -p $(BUILD_DIR)
+	$(CC) $^ -o $(BUILD_DIR)/$@
+
 .PHONY: clean
 clean:
 	rm -f $(EXE)
+
+# Test with prog
+.PHONY:
+.SILENT:
+test: all prog
+	cd $(BUILD_DIR)
+	exec ./$(basename $(EXE))
