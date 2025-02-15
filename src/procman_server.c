@@ -238,7 +238,7 @@ static void pm_server_reap_terminated_process(procman *pm) {
     }
 }
 
-static void pm_server_reschedule_processes(procman *pm) {
+static void pm_server_run_queued_process(procman *pm) {
     if (pm->processes_running_count < pm->processes_running_max) {
 
         /* Find earliest ready process */
@@ -330,7 +330,7 @@ extern void pm_server_init(procman *pm) {
         size_t size = read_pipe(pm->pipe[0], &cmd_str);
 
         pm_server_reap_terminated_process(pm);
-        pm_server_reschedule_processes(pm);
+        pm_server_run_queued_process(pm);
 
         /* Ignore further processing on errors */
         if (size < 1) {
