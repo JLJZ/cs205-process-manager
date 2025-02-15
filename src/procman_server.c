@@ -67,9 +67,7 @@ static void pm_server_stop_process(procman *pm, process *p) {
     }
     
     pm_server_remove_running_process(pm, p);
-    
     kill(p->pid, SIGSTOP);
-
     p->status = STOPPED;
 }
 
@@ -79,7 +77,6 @@ static void pm_server_terminate_process(procman *pm, process *p) {
     }
     
     pm_server_remove_running_process(pm, p);
-
     kill(p->pid, SIGTERM);
     p->status = TERMINATED;
 }
@@ -108,6 +105,7 @@ static void pm_server_spawn_process(procman *pm, char *const argv[]) {
 
         puts("Child process spawned");
 
+        /* Suspend process to wait for parent to resume it before execvp() */
         if (raise(SIGSTOP) == 0) {
             puts("Child process started");
 
