@@ -132,6 +132,7 @@ static void pm_server_resume_process(procman *pm, process *p) {
     }
 
     p->status = RUNNING;
+    kill(p->pid, SIGCONT);
     free(pm->processes_running);
     pm->processes_running = to_run;
 }
