@@ -46,11 +46,42 @@ static process *pm_find_process(procman *pm, pid_t pid) {
  ******************************************************************************/
 
 
-static void pm_server_terminate_process(process *p) {
-    if (p->status != TERMINATED) {
-        kill(p->pid, SIGTERM);
-        p->status = TERMINATED;
+static void pm_server_remove_running_process(procman *pm, process *p) {
+    if (p->status != RUNNING) {
+        return;
     }
+
+    for (size_t i = 0; i < pm->processes_running_max; ++i) {
+        if (pm->processes_running[i] && pm->processes_running[i] == p) {
+            pm->processes_running[i] = NULL;
+            pm->processes_running_count -= 1;
+            printf("Removed from running (%d)\n", p->pid);
+            break;
+        }
+    }
+}
+
+static void pm_server_stop_process(procman *pm, process *p) {
+    if (p->status == TERMINATED || p->status == STOPPED) {
+        return;
+    }
+    
+    pm_server_remove_running_process(pm, p);
+    
+    kill(p->pid, SIGSTOP);
+
+    p->status = STOPPED;
+}
+
+static void pm_server_terminate_process(procman *pm, process *p) {
+    if (p->status == TERMINATED) {
+        return;
+    }
+    
+    pm_server_remove_running_process(pm, p);
+
+    kill(p->pid, SIGTERM);
+    p->status = TERMINATED;
 }
 
 static void pm_server_spawn_process(procman *pm, char *const argv[]) {
@@ -112,25 +143,6 @@ static void pm_server_spawn_process(procman *pm, char *const argv[]) {
     }
 }
 
-static void pm_server_stop_process(procman *pm, process *p) {
-    if (p->status == TERMINATED || p->status == STOPPED) {
-        return;
-    }
-    
-    if (p->status == RUNNING) {
-        for (size_t i = 0; i < pm->processes_running_max; ++i) {
-            if (pm->processes_running[i] == p) {
-                pm->processes_running = NULL;
-                break;
-            }
-        }
-    }
-    
-    kill(p->pid, SIGSTOP);
-
-    p->status = STOPPED;
-}
-
 
 /******************************************************************************
  *                              COMMAND DISPATCHER                            *
@@ -182,7 +194,7 @@ static void dispatch(procman *pm, args *a) {
             pid_t pid = parse_pid(a->argv[1]);
             process *p = pm_find_process(pm, pid);
             if (p) {
-                pm_server_terminate_process(p);
+                pm_server_terminate_process(pm, p);
             }
         }
 
@@ -216,21 +228,19 @@ static void pm_server_reap_terminated_process(procman *pm) {
         default: {
             process *p = pm_find_process(pm, pid);
             
-            if (WIFSTOPPED(status)) {
-                puts("STOPPED");
-
-            } else if (WIFCONTINUED(status)) {
-                puts("CONTINUED");
-
-            } else if (WIFEXITED(status)) {
+            if (WIFEXITED(status)) {
                 p->status = TERMINATED;
-                puts("EXITED");
-
-            } else if (WIFSIGNALED(status)) {
-                psignal(WTERMSIG(status), "Exit signal");
-
-            } else {
-                perror("Unknown process status after wait()");
+            
+                for (size_t i = 0; i < pm->processes_running_max; ++i) {
+                    process *p = pm->processes_running[i];
+                    if (p != NULL && p->pid == pid) {
+                        pm->processes_running[i] = NULL;
+                        pm->processes_running_count -= 1;
+                        printf("Removed from running (%d)\n", p->pid);
+                        break;
+                    }
+                }
+                printf("Terminated (%d)\n", p->pid);
             }
         }
     }
