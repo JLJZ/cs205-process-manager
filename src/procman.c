@@ -16,6 +16,7 @@ extern void pm_server_init(procman *pm);
 procman *pm_init(size_t max_running_processes) {
     procman *pm = calloc(1, sizeof(procman));
     pm->processes = NULL;
+    pm->last_process = NULL;
     pm->processes_running_count = 0;
     pm->processes_running_max = max_running_processes;
     pm->processes_running = malloc(max_running_processes * sizeof(process *));
@@ -23,7 +24,6 @@ procman *pm_init(size_t max_running_processes) {
     for (size_t i = 0; i < max_running_processes; i++) {
         pm->processes_running[i] = NULL;
     }
-    
     
     if (pipe(pm->pipe) < 0) {
         error("pipe() init failed");

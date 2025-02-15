@@ -22,6 +22,7 @@ typedef struct procman {
     int pipe[2];
     pid_t server_pid;
     process *processes;
+    process *last_process;
 
     process **processes_running;
     size_t processes_running_max;

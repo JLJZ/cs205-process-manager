@@ -32,6 +32,21 @@ static process *find_process(process *processes, pid_t pid) {
     return NULL;
 }
 
+static void pm_enqueue_process(procman *pm, process *p) {
+    if (pm->processes == NULL) {
+        p->next = NULL;
+        p->previous = NULL;
+        pm->processes = p;
+        pm->last_process = p;
+
+    } else {
+        pm->last_process->next = p;
+        p->previous = pm->last_process;
+        p->next = NULL;
+        pm->last_process = p;
+    }
+}
+
 
 /******************************************************************************
  *                               COMMAND HANDLERS                             *
@@ -185,13 +200,7 @@ static void pm_server_spawn_process(procman *pm, char *const argv[]) {
         process *p = malloc(sizeof(process));
         p->pid = pid;
         p->status = READY;
-        p->previous = NULL;
-        p->next = NULL;
-        if (pm->processes != NULL) {
-            pm->processes->previous = p;
-            p->next = pm->processes;
-        }
-        pm->processes = p;
+        pm_enqueue_process(pm, p);
         break;
     }
     }
