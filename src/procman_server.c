@@ -21,8 +21,8 @@
  ******************************************************************************/
 
 
-static process *pm_find_process(procman *pm, pid_t pid) {
-    for (process *p = pm->processes; p != NULL; p = p->next) {
+static process *find_process(process *processes, pid_t pid) {
+    for (process *p = processes; p != NULL; p = p->next) {
         /* Assuming there are never duplicated pid stored */
         if (p->pid == pid) {
             return p;
@@ -179,7 +179,7 @@ static void dispatch(procman *pm, args *a) {
     } else if (!strcmp(command, "stop")) {
         if (ensure_args_length(a, 2, "USAGE: stop [PID]\n")) {
             pid_t pid = parse_pid(a->argv[1]);
-            process *p = pm_find_process(pm, pid);
+            process *p = find_process(pm->processes, pid);
             if (p) {
                 pm_server_stop_process(pm, p);
             }
@@ -188,7 +188,7 @@ static void dispatch(procman *pm, args *a) {
     } else if (!strcmp(command, "kill")) {
         if (ensure_args_length(a, 2, "USAGE: kill [PID]\n")) {
             pid_t pid = parse_pid(a->argv[1]);
-            process *p = pm_find_process(pm, pid);
+            process *p = find_process(pm->processes, pid);
             if (p) {
                 pm_server_terminate_process(pm, p);
             }
@@ -222,7 +222,7 @@ static void pm_server_reap_terminated_process(procman *pm) {
             return;
 
         default: {
-            process *p = pm_find_process(pm, pid);
+            process *p = find_process(pm->processes, pid);
 
             /* The process here should always be managed by us */
             assert(p != NULL);
