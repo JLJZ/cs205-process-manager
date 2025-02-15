@@ -213,7 +213,7 @@ static void dispatch(procman *pm, args *a) {
 static void pm_server_reap_terminated_process(procman *pm) {
     int status = 0;
 
-    pid_t pid = waitpid(-1, &status, WNOHANG | WCONTINUED | WSTOPPED);
+    pid_t pid = waitpid(-1, &status, WNOHANG);
     
     switch (pid) {
         case -1:
@@ -225,19 +225,13 @@ static void pm_server_reap_terminated_process(procman *pm) {
 
         default: {
             process *p = pm_find_process(pm, pid);
+
+            /* The process here should always be managed by us */
+            assert(p != NULL);
             
-            if (WIFEXITED(status)) {
+            if (WIFEXITED(status) || WIFSIGNALED(status)) {
+                pm_server_remove_running_process(pm, p);
                 p->status = TERMINATED;
-            
-                for (size_t i = 0; i < pm->processes_running_max; ++i) {
-                    process *p = pm->processes_running[i];
-                    if (p != NULL && p->pid == pid) {
-                        pm->processes_running[i] = NULL;
-                        pm->processes_running_count -= 1;
-                        printf("Removed from running (%d)\n", p->pid);
-                        break;
-                    }
-                }
                 printf("Terminated (%d)\n", p->pid);
             }
         }
