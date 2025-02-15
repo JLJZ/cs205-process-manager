@@ -1,12 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <string.h>
 #include <signal.h>
 #include <assert.h>
 #include <errno.h>
 #include <stdbool.h>
-#include <fcntl.h>
 #include <sys/wait.h>
 #include <sys/prctl.h>
 
@@ -22,12 +20,6 @@
  *                                 UTILITIES                                  * 
  ******************************************************************************/
 
-
-static void pm_list_processes(procman *pm) {
-    for (process *p = pm->processes; p != NULL; p = p->next) {
-        printf("%d,%d\n", p->pid, p->status);
-    }
-}
 
 static process *pm_find_process(procman *pm, pid_t pid) {
     for (process *p = pm->processes; p != NULL; p = p->next) {
@@ -45,6 +37,12 @@ static process *pm_find_process(procman *pm, pid_t pid) {
  *                               COMMAND HANDLERS                             *
  ******************************************************************************/
 
+
+static void pm_list_processes(procman *pm) {
+    for (process *p = pm->processes; p != NULL; p = p->next) {
+        printf("%d,%d\n", p->pid, p->status);
+    }
+}
 
 static void pm_server_remove_running_process(procman *pm, process *p) {
     if (p->status != RUNNING) {
