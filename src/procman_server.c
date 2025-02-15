@@ -79,6 +79,63 @@ static void pm_server_terminate_process(procman *pm, process *p) {
     p->status = TERMINATED;
 }
 
+static void pm_server_resume_process(procman *pm, process *p) {
+    if (p->status != STOPPED) {
+        return;
+    }
+    
+    /* Collect earliest process to be run */
+    process **to_run = malloc(sizeof(process *) * pm->processes_running_max);
+    size_t idx = 0;
+    process *pp = pm->processes;
+
+    while (idx < pm->processes_running_max && pp != NULL) {
+        if (pp->status == RUNNING || pp->status == READY || pp == p) {
+            to_run[idx++] = pp;
+        }
+        pp = pp->next;
+    }
+
+    /* Check if target process should be ran after resumption */
+    bool should_run = false;
+    for (size_t i = 0; i < pm->processes_running_max; ++i) {
+        if (to_run[i] == p) {
+            should_run = true;
+            break;
+        }
+    }
+    
+    if (!should_run) {
+        p->status = READY;
+        return;
+    }
+
+    /* READY all currently running processes not in our list */
+    for (size_t i = 0; i < pm->processes_running_max; ++i) {
+        if (pm->processes_running[i] == NULL) {
+            continue;
+        }
+
+        bool found = false;
+
+        for (size_t j = 0; j < pm->processes_running_max; ++j) {
+            if (pm->processes_running[i] == to_run[j]) {
+                found = true;
+                break;
+            }
+        }
+        
+        if (!found && pm->processes_running[i]->status == RUNNING) {
+            pm->processes_running[i]->status = READY;
+        }
+
+    }
+
+    p->status = RUNNING;
+    free(pm->processes_running);
+    pm->processes_running = to_run;
+}
+
 static void pm_server_spawn_process(procman *pm, char *const argv[]) {
 
     pid_t pid = fork();
@@ -191,6 +248,15 @@ static void dispatch(procman *pm, args *a) {
             process *p = find_process(pm->processes, pid);
             if (p) {
                 pm_server_terminate_process(pm, p);
+            }
+        }
+
+    } else if (!strcmp(command, "resume")) {
+        if (ensure_args_length(a, 2, "USAGE: resume [PID]\n")) {
+            pid_t pid = parse_pid(a->argv[1]);
+            process *p = find_process(pm->processes, pid);
+            if (p) {
+                pm_server_resume_process(pm, p);
             }
         }
 
