@@ -443,7 +443,7 @@ static void pm_server_reschedule_processes(procman *pm) {
 
 
 /**
- * @brief Initialise a process manager>
+ * @brief Initialise a process manager.
  * 
  * @param pm Target process manager
  * @param max_running_processes Number of processes allowed to be running
