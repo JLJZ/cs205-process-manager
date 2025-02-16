@@ -9,6 +9,12 @@
  ******************************************************************************/
 
 
+/**
+ * @brief Count number of null delimited strings in bytes.
+ * 
+ * @param bytes Source data ended with a double null character
+ * @return size_t Number of tokens
+ */
 static size_t count_tokens(const char *bytes) {
     size_t count = 0;
 
@@ -25,6 +31,13 @@ static size_t count_tokens(const char *bytes) {
     return count;
 }
 
+/**
+ * @brief 
+ * 
+ * @param bytes Source data ended with a null character
+ * @param token_count Number of tokens in bytes
+ * @return char** Array of string tokens parsed. Last item in array is NULL
+ */
 static char **to_argv(char *bytes, size_t token_count) {
     char **argv = calloc(token_count + 1, sizeof(char *));
     argv[token_count] = NULL;
@@ -39,7 +52,6 @@ static char **to_argv(char *bytes, size_t token_count) {
 
     return argv;
 }
-
 
 /**
  * @brief Consumes a string of bytes and casts it into args
