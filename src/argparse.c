@@ -41,6 +41,21 @@ static char **to_argv(char *bytes, size_t token_count) {
 }
 
 
+/**
+ * @brief Consumes a string of bytes and casts it into args
+ * 
+ * @param a destination
+ * @param bytes source
+ * @param size number of bytes
+ */
+static void args_cast(args *a, char *bytes, size_t size) {
+    a->bytes = bytes;
+    a->bytes_size = size;
+    a->token_count = count_tokens(bytes);
+    a->argv = to_argv(bytes, a->token_count);
+}
+
+
 /******************************************************************************
  *                             PUBLIC INTERFACE                               * 
  ******************************************************************************/
@@ -71,13 +86,6 @@ void args_parse(args *a, const char *str) {
     buffer = realloc(buffer, len * sizeof(char));
     
     args_cast(a, buffer, len);
-}
-
-void args_cast(args *a, char *bytes, size_t size) {
-    a->bytes = bytes;
-    a->bytes_size = size;
-    a->token_count = count_tokens(bytes);
-    a->argv = to_argv(bytes, a->token_count);
 }
 
 void args_free(args *a) {
