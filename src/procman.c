@@ -160,7 +160,7 @@ static void pm_server_resume_process(process *p) {
 /**
  * @brief Spawn a child process that executes a given shell command.
  * 
- * @details Child is spawned and suspended. It will be queued into the
+ * Child is spawned and suspended. It will be queued into the
  * process manager in a READY state to be according to the scheduler.
  * 
  * @param pm Target process manager
