@@ -19,7 +19,7 @@ typedef struct args {
 void args_parse(args *a, const char *str);
 
 /**
- * @brief Deallocated internally memory used by args
+ * @brief Deallocate internally memory used by args
  * 
  * @param a Target args
  */
