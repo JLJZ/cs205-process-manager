@@ -13,8 +13,6 @@
 
 #define error(msg) do { perror("[procman-server] " msg); } while (0);
 
-#define BUFFER_SIZE 64
-
 #define USAGE "COMMANDS:\n"                     \
               "    run [program] [arguments]\n" \
               "    stop [PID]\n"                \
@@ -372,7 +370,7 @@ static void pm_server_reschedule_processes(procman *pm) {
 
 
 /******************************************************************************
- *                                INITIALISER                                 * 
+ *                             PUBLIC INTERFACE                               * 
  ******************************************************************************/
 
 
