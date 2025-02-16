@@ -374,6 +374,12 @@ static void pm_server_reschedule_processes(procman *pm) {
  ******************************************************************************/
 
 
+/**
+ * @brief Initialise a process manager>
+ * 
+ * @param pm Target process manager
+ * @param max_running_processes Number of processes allowed to be running
+ */
 void pm_init(procman *pm, size_t max_running_processes) {
     pm->processes = NULL;
     pm->last_process = NULL;
@@ -382,6 +388,12 @@ void pm_init(procman *pm, size_t max_running_processes) {
     pm->processes_running = malloc(max_running_processes * sizeof(process *));
 }
 
+/**
+ * @brief Dispatch a command to the process manager.
+ * 
+ * @param pm Target process manager
+ * @param command The command string
+ */
 void pm_send_command(procman *pm, const char *command) {
     if (command != NULL) {
         args a;
@@ -391,11 +403,21 @@ void pm_send_command(procman *pm, const char *command) {
     }
 }
 
+/**
+ * @brief Run process management procedures. Should be called repeatedly.
+ * 
+ * @param pm Target process manager
+ */
 void pm_run(procman *pm) {
     pm_server_reap_terminated_process(pm);
     pm_server_reschedule_processes(pm);
 }
 
+/**
+ * @brief Free all resources and spawned processes.
+ * 
+ * @param pm Target process manager
+ */
 void pm_shutdown(procman *pm) {
     pm_clear_processes(pm);
     if (pm->processes_running != NULL) {
