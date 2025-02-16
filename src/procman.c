@@ -384,14 +384,16 @@ void pm_init(procman *pm, size_t max_running_processes) {
     pm->processes_running = malloc(max_running_processes * sizeof(process *));
 }
 
-void pm_run(procman *pm, const char *command) {
+void pm_send_command(procman *pm, const char *command) {
     if (command != NULL) {
         args a;
         args_parse(&a, command);
         dispatch(pm, &a);
         args_free(&a);
     }
+}
 
+void pm_run(procman *pm) {
     pm_server_reap_terminated_process(pm);
     pm_server_reschedule_processes(pm);
 }

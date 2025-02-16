@@ -29,7 +29,9 @@ typedef struct procman {
 
 void pm_init(procman *pm, size_t max_running_processes);
 
-void pm_run(procman *pm, const char *command);
+void pm_send_command(procman *pm, const char *command);
+
+void pm_run(procman *pm);
 
 void pm_shutdown(procman *pm);
 
