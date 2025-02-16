@@ -77,12 +77,23 @@ static void pm_enqueue_process(procman *pm, process *p) {
  ******************************************************************************/
 
 
+/**
+ * @brief Prints all process status in sequence of the process chain
+ * 
+ * @param pm Process manager with target process chain
+ */
 static void pm_list_processes(procman *pm) {
     for (process *p = pm->processes; p != NULL; p = p->next) {
         printf("%d,%d\n", p->pid, p->status);
     }
 }
 
+/**
+ * @brief Remove a running process from the running process list.
+ * 
+ * @param pm Process manager with target list
+ * @param p Target process with status RUNNING. No-op for other states
+ */
 static void pm_server_remove_running_process(procman *pm, process *p) {
     if (p->status != RUNNING) {
         return;
@@ -98,6 +109,12 @@ static void pm_server_remove_running_process(procman *pm, process *p) {
     }
 }
 
+/**
+ * @brief Stop a process and removes it from running list if it is running.
+ * 
+ * @param pm Process manager with target list
+ * @param p Target process. No-op if status is TERMINATED or STOPPED
+ */
 static void pm_server_stop_process(procman *pm, process *p) {
     if (p->status == TERMINATED || p->status == STOPPED) {
         return;
@@ -108,6 +125,12 @@ static void pm_server_stop_process(procman *pm, process *p) {
     p->status = STOPPED;
 }
 
+/**
+ * @brief Terminate a process and removes it from running list if it is running.
+ * 
+ * @param pm Process manager with target list
+ * @param p Target process. No-op if status is TERMINATED
+ */
 static void pm_server_terminate_process(procman *pm, process *p) {
     if (p->status == TERMINATED) {
         return;
@@ -118,6 +141,14 @@ static void pm_server_terminate_process(procman *pm, process *p) {
     p->status = TERMINATED;
 }
 
+/**
+ * @brief Resume a stopped process.
+ *
+ * @param p Target process that must have status STOPPED
+ *
+ * @note Unlike other command handlers, only process management state is
+ * updated. No signals are sent to the underlying process
+ */
 static void pm_server_resume_process(process *p) {
     assert(p->status == STOPPED);
     p->status = READY;
@@ -126,6 +157,16 @@ static void pm_server_resume_process(process *p) {
      */
 }
 
+/**
+ * @brief Spawn a child process that executes a given shell command.
+ * 
+ * @details Child is spawned and suspended. It will be queued into the
+ * process manager in a READY state to be according to the scheduler.
+ * 
+ * @param pm Target process manager
+ * @param argv Array of strings representing tokens of the command. Last token
+ * must be NULL to indicate the end of the array
+ */
 static void pm_server_spawn_process(procman *pm, char *const argv[]) {
 
     pid_t parent_pid = getpid();
@@ -193,12 +234,20 @@ static void pm_server_spawn_process(procman *pm, char *const argv[]) {
             pm_enqueue_process(pm, p);
         }
 
+        /* No-op when child is unexpectedly terminated and not stopped */
+
         break;
     }
     }
 }
 
+/**
+ * @brief Terminate all managed processes and remove their handle.
+ * 
+ * @param pm Target process manager
+ */
 static void pm_clear_processes(procman *pm) {
+    /* Iterate process chain to terminate each process and free its pointer */
     process *p = pm->processes;
     while (p != NULL) {
         kill(p->pid, SIGTERM);
