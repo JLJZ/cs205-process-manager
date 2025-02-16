@@ -103,7 +103,6 @@ static void pm_server_remove_running_process(procman *pm, process *p) {
         if (pm->processes_running[i] && pm->processes_running[i] == p) {
             pm->processes_running[i] = NULL;
             pm->processes_running_count -= 1;
-            printf("Removed from running (%d)\n", p->pid);
             break;
         }
     }
@@ -190,12 +189,8 @@ static void pm_server_spawn_process(procman *pm, char *const argv[]) {
             exit(EXIT_FAILURE);
         }
 
-        puts("Child process spawned");
-
         /* Suspend process to wait for parent to resume it before execvp() */
         if (raise(SIGSTOP) == 0) {
-            puts("Child process started");
-
             if (execvp(argv[0], argv) < 0) {
                 /* Print exec() error, usually due to program not found */
                 char *msg = "error running ";
@@ -395,7 +390,6 @@ static void pm_server_reap_terminated_process(procman *pm) {
             if (WIFEXITED(status) || WIFSIGNALED(status)) {
                 pm_server_remove_running_process(pm, p);
                 p->status = TERMINATED;
-                printf("Terminated (%d)\n", p->pid);
             }
         }
     }
@@ -450,7 +444,6 @@ static void pm_server_reschedule_processes(procman *pm) {
         if (!process_should_run) {
             p_running->status = READY;
             kill(p_running->pid, SIGSTOP);
-            puts("Ready now");
 
         } else {
             /* Process in running list but not running is a bug */
@@ -464,7 +457,6 @@ static void pm_server_reschedule_processes(procman *pm) {
         if (p_to_run != NULL && p_to_run->status == READY) {
             p_to_run->status = RUNNING;
             kill(p_to_run->pid, SIGCONT);
-            puts("Running now");
         }
     }
 
