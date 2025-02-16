@@ -10,8 +10,19 @@ typedef struct args {
     char **argv;
 } args;
 
+/**
+ * @brief Collect whitespace delimited words into args
+ * 
+ * @param a Destination args
+ * @param str Source string
+ */
 void args_parse(args *a, const char *str);
 
+/**
+ * @brief Deallocated internally memory used by args
+ * 
+ * @param a Target args
+ */
 void args_free(args *a);
 
 #endif

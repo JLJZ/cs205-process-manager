@@ -73,6 +73,12 @@ static void args_cast(args *a, char *bytes, size_t size) {
  ******************************************************************************/
 
 
+/**
+ * @brief Collect whitespace delimited words into args
+ * 
+ * @param a Destination args
+ * @param str Source string
+ */
 void args_parse(args *a, const char *str) {
     /* Initialise buffer with 2 additional bytes for a double null terminator */
     char *buffer = calloc(strlen(str) + 2, sizeof(char));
@@ -82,6 +88,7 @@ void args_parse(args *a, const char *str) {
     while (*str != '\0') {
         if (*str == ' ') {
             buffer[len++] = '\0';
+            /* Skip contiguous whitespaces */
             while (*str == ' ') {
                 str++;
             }
@@ -100,6 +107,11 @@ void args_parse(args *a, const char *str) {
     args_cast(a, buffer, len);
 }
 
+/**
+ * @brief Deallocated internally memory used by args
+ * 
+ * @param a Target args
+ */
 void args_free(args *a) {
     free(a->argv);
     free((void *)a->bytes);
