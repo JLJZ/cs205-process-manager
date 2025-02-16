@@ -114,5 +114,8 @@ void args_parse(args *a, const char *str) {
  */
 void args_free(args *a) {
     free(a->argv);
-    free((void *)a->bytes);
+    a->argv = NULL;
+
+    free(a->bytes);
+    a->bytes = NULL;
 }
