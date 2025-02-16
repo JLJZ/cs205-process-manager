@@ -273,6 +273,9 @@ static void dispatch(procman *pm, args *a) {
     } else if (!strcmp(command, "list")) {
         pm_list_processes(pm);
 
+    } else if (!strcmp(command, "exit")) {
+        exit(EXIT_SUCCESS);
+
     } else {
         fprintf(stderr, "Unrecognised command\n");
     }
