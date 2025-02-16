@@ -271,6 +271,15 @@ static void pm_clear_processes(procman *pm) {
  ******************************************************************************/
 
 
+/**
+ * @brief Ensure number of required arguments is hit.
+ * 
+ * @param a Target argument
+ * @param n Minimum number of tokens
+ * @param message Message to print when lacking tokens
+ * @return true Reached token count
+ * @return false Less than token count
+ */
 static bool ensure_args_length(args *a, size_t n, const char *message) {
     if (a->token_count < n) {
         fwrite(message, sizeof(char), strlen(message) + 1, stderr);
@@ -280,6 +289,12 @@ static bool ensure_args_length(args *a, size_t n, const char *message) {
     return true;
 }
 
+/**
+ * @brief Parse a string representing a pid into a pid_t type
+ * 
+ * @param pid Target pid
+ * @return pid_t Parsed pid. 0 if string was an invalid pid
+ */
 static pid_t parse_pid(const char *pid) {
     int num = atoi(pid);
     /* atoi() returns 0 on invalid input but 0 is also an invalid pid for us */
@@ -289,6 +304,12 @@ static pid_t parse_pid(const char *pid) {
     return num;
 }
 
+/**
+ * @brief Execute command handlers based on received commands.
+ * 
+ * @param pm Target process manager to run command handlers on
+ * @param a Command encoded as NULL terminated array of strings
+ */
 static void dispatch(procman *pm, args *a) {
     /* No-op when empty command received */
     if (a->token_count == 0) {
@@ -335,8 +356,7 @@ static void dispatch(procman *pm, args *a) {
     } else if (!strcmp(command, "exit")) {
         pm_clear_processes(pm);
 
-    } else {
-
+    } else { /* Unrecognised command received */
         fprintf(stderr, USAGE);
     }
 }
