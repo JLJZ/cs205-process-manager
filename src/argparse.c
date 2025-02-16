@@ -3,6 +3,12 @@
 
 #include "argparse.h"
 
+
+/******************************************************************************
+ *                                 UTILITIES                                  * 
+ ******************************************************************************/
+
+
 static size_t count_tokens(const char *bytes) {
     size_t count = 0;
 
@@ -33,6 +39,12 @@ static char **to_argv(char *bytes, size_t token_count) {
 
     return argv;
 }
+
+
+/******************************************************************************
+ *                             PUBLIC INTERFACE                               * 
+ ******************************************************************************/
+
 
 void args_parse(args *a, const char *str) {
     /* Initialise buffer with 2 additional bytes for a double null terminator */
