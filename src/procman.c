@@ -367,11 +367,17 @@ static void dispatch(procman *pm, args *a) {
  ******************************************************************************/
 
 
+/**
+ * @brief Remove zombie children and update their status to TERMINATED.
+ * 
+ * @param pm Target process manager
+ */
 static void pm_server_reap_terminated_process(procman *pm) {
     int status = 0;
 
     pid_t pid = waitpid(-1, &status, WNOHANG);
     
+    /* No-op if waitpid return -1 or 0 */
     switch (pid) {
         case -1:
             if (ECHILD != errno) {  /* Ignore if there's no children */
@@ -380,7 +386,7 @@ static void pm_server_reap_terminated_process(procman *pm) {
         case 0:
             return;
 
-        default: {
+        default: { /* A process has terminated */
             process *p = find_process(pm->processes, pid);
 
             /* The process here should always be managed by us */
@@ -395,6 +401,16 @@ static void pm_server_reap_terminated_process(procman *pm) {
     }
 }
 
+/**
+ * @brief Reshedule processes to run based on availability and priority.
+ * 
+ * Priority is given to earliest spawned processes that are in status READY OR
+ * RUNNING. The number of running process is set by the process manager and
+ * processes with lower priority have to wait for high priority processes to
+ * finish if the max number of processes is already running.
+ * 
+ * @param pm Target process manager
+ */
 static void pm_server_reschedule_processes(procman *pm) {
     
     /* Collect earliest process to be ran */
@@ -430,11 +446,12 @@ static void pm_server_reschedule_processes(procman *pm) {
                 break;
             }
         }
-            
+
         if (!process_should_run) {
             p_running->status = READY;
             kill(p_running->pid, SIGSTOP);
             puts("Ready now");
+
         } else {
             /* Process in running list but not running is a bug */
             assert(p_running->status == RUNNING);
