@@ -6,10 +6,8 @@
 #include <sys/wait.h>
 
 #include "procman.h"
-#include "argparse.h"
 
 #define MAX_RUNNING_PROCESSES 3
-#define SHUTDOWN_TIMEOUT 5
 
 /**
  * @brief Read a command from stdin
@@ -33,7 +31,8 @@ static char *read_line(void) {
 }
 
 int main(void) {
-    procman *pm = pm_init(MAX_RUNNING_PROCESSES);
+    procman pm;
+    pm_init(&pm, MAX_RUNNING_PROCESSES);
 
     while (true) {
         printf("cs205$ ");
@@ -44,12 +43,12 @@ int main(void) {
             break;
         }
         
-        pm_execute(pm, command);
+        pm_run(&pm, command);
 
         free(command);
     }
     
-    pm_shutdown(pm, SHUTDOWN_TIMEOUT);
+    pm_shutdown(&pm);
 
     return 0;
 }

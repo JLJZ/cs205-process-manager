@@ -19,8 +19,6 @@ struct process {
 };
 
 typedef struct procman {
-    int pipe[2];
-    pid_t server_pid;
     process *processes;
     process *last_process;
 
@@ -29,10 +27,10 @@ typedef struct procman {
     size_t processes_running_count;
 } procman;
 
-procman *pm_init(size_t max_running_processes);
+void pm_init(procman *pm, size_t max_running_processes);
 
-void pm_shutdown(procman *pm, unsigned int retries);
+void pm_run(procman *pm, const char *command);
 
-void pm_execute(procman *pm, const char *cmd_string);
+void pm_shutdown(procman *pm);
 
 #endif

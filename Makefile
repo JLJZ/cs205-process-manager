@@ -5,7 +5,7 @@ SRC_DIR := ./src
 BUILD_DIR := ./bin
 EXE := ${BUILD_DIR}/procman
 
-SRC = $(SRC_DIR)/main.c $(SRC_DIR)/argparse.c $(SRC_DIR)/procman.c $(SRC_DIR)/procman_server.c
+SRC = $(SRC_DIR)/main.c $(SRC_DIR)/argparse.c $(SRC_DIR)/procman.c
 	
 
 all: $(EXE)
