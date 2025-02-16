@@ -308,7 +308,7 @@ static pid_t parse_pid(const char *pid) {
  * @brief Execute command handlers based on received commands.
  * 
  * @param pm Target process manager to run command handlers on
- * @param a Command encoded as NULL terminated array of strings
+ * @param a Command to dispatch
  */
 static void dispatch(procman *pm, args *a) {
     /* No-op when empty command received */

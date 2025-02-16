@@ -4,8 +4,6 @@
 #include <string.h>
 #include <fcntl.h>
 
-#include <assert.h>
-
 #include "procman.h"
 
 #define MAX_RUNNING_PROCESSES 3
@@ -42,7 +40,11 @@ static char *read_input(void) {
  * @brief Split string by linefeed. Not re-entrant because of internal strtok()
  * 
  * @param str Input string to split. Mutates the string
- * @return char** List of strings
+ * @param[out] count Return value of the number of lines parsed
+ * @return char** List of strings lines
+ * 
+ * @note The array returned has to be freed, but no memory is allocated for
+ * its items. Deallocate the passed in string argument to free all the items. 
  */
 static char **split_lines(char *str, size_t *count) {
     if (str == NULL) {
