@@ -94,7 +94,7 @@ static void pm_list_processes(procman *pm) {
  * @param pm Process manager with target list
  * @param p Target process with status RUNNING. No-op for other states
  */
-static void pm_server_remove_running_process(procman *pm, process *p) {
+static void pm_remove_running_process(procman *pm, process *p) {
     if (p->status != RUNNING) {
         return;
     }
@@ -114,12 +114,12 @@ static void pm_server_remove_running_process(procman *pm, process *p) {
  * @param pm Process manager with target list
  * @param p Target process. No-op if status is TERMINATED or STOPPED
  */
-static void pm_server_stop_process(procman *pm, process *p) {
+static void pm_stop_process(procman *pm, process *p) {
     if (p->status == TERMINATED || p->status == STOPPED) {
         return;
     }
     
-    pm_server_remove_running_process(pm, p);
+    pm_remove_running_process(pm, p);
     kill(p->pid, SIGSTOP);
     p->status = STOPPED;
 }
@@ -130,12 +130,12 @@ static void pm_server_stop_process(procman *pm, process *p) {
  * @param pm Process manager with target list
  * @param p Target process. No-op if status is TERMINATED
  */
-static void pm_server_terminate_process(procman *pm, process *p) {
+static void pm_terminate_process(procman *pm, process *p) {
     if (p->status == TERMINATED) {
         return;
     }
     
-    pm_server_remove_running_process(pm, p);
+    pm_remove_running_process(pm, p);
     kill(p->pid, SIGTERM);
     p->status = TERMINATED;
 }
@@ -148,7 +148,7 @@ static void pm_server_terminate_process(procman *pm, process *p) {
  * @note Unlike other command handlers, only process management state is
  * updated. No signals are sent to the underlying process
  */
-static void pm_server_resume_process(process *p) {
+static void pm_resume_process(process *p) {
     assert(p->status == STOPPED);
     p->status = READY;
     /* Don't send SIGCONT and let the rescheduler decide whether the process
@@ -166,7 +166,7 @@ static void pm_server_resume_process(process *p) {
  * @param argv Array of strings representing tokens of the command. Last token
  * must be NULL to indicate the end of the array
  */
-static void pm_server_spawn_process(procman *pm, char *const argv[]) {
+static void pm_spawn_process(procman *pm, char *const argv[]) {
 
     pid_t parent_pid = getpid();
     pid_t child_pid = fork();
@@ -315,7 +315,7 @@ static void dispatch(procman *pm, args *a) {
 
     if (!strcmp(command, "run")) {
         if (ensure_args_length(a, 2, "USAGE: run [program] [arguments]\n")) {
-            pm_server_spawn_process(pm, a->argv + 1);
+            pm_spawn_process(pm, a->argv + 1);
         }
 
     } else if (!strcmp(command, "stop")) {
@@ -328,7 +328,7 @@ static void dispatch(procman *pm, args *a) {
                 } else if (p->status == STOPPED) {
                     fprintf(stderr, "Already stopped (%d)\n", pid);
                 } else {
-                    pm_server_stop_process(pm, p);
+                    pm_stop_process(pm, p);
                 }
             } else {
                 fprintf(stderr, "PID not found (%d)\n", pid);
@@ -343,7 +343,7 @@ static void dispatch(procman *pm, args *a) {
                 if (p->status == TERMINATED) {
                     fprintf(stderr, "Already terminated (%d)\n", pid);
                 } else {
-                    pm_server_terminate_process(pm, p);
+                    pm_terminate_process(pm, p);
                 }
             } else {
                 fprintf(stderr, "PID not found (%d)\n", pid);
@@ -362,7 +362,7 @@ static void dispatch(procman *pm, args *a) {
                 } else if (p->status == TERMINATED) {
                     fprintf(stderr, "Already terminated (%d)\n", pid);
                 } else {
-                    pm_server_resume_process(p);
+                    pm_resume_process(p);
                 }
             } else {
                 fprintf(stderr, "PID not found (%d)\n", pid);
@@ -391,7 +391,7 @@ static void dispatch(procman *pm, args *a) {
  * 
  * @param pm Target process manager
  */
-static void pm_server_reap_terminated_process(procman *pm) {
+static void pm_reap_terminated_process(procman *pm) {
     int status = 0;
 
     pid_t pid = waitpid(-1, &status, WNOHANG);
@@ -412,7 +412,7 @@ static void pm_server_reap_terminated_process(procman *pm) {
             assert(p != NULL);
             
             if (WIFEXITED(status) || WIFSIGNALED(status)) {
-                pm_server_remove_running_process(pm, p);
+                pm_remove_running_process(pm, p);
                 p->status = TERMINATED;
             }
         }
@@ -429,7 +429,7 @@ static void pm_server_reap_terminated_process(procman *pm) {
  * 
  * @param pm Target process manager
  */
-static void pm_server_reschedule_processes(procman *pm) {
+static void pm_reschedule_processes(procman *pm) {
     
     /* Collect earliest process to be ran */
     process **to_run = malloc(sizeof(process *) * pm->processes_running_max);
@@ -530,8 +530,8 @@ void pm_send_command(procman *pm, const char *command) {
  * @param pm Target process manager
  */
 void pm_run(procman *pm) {
-    pm_server_reap_terminated_process(pm);
-    pm_server_reschedule_processes(pm);
+    pm_reap_terminated_process(pm);
+    pm_reschedule_processes(pm);
 }
 
 /**
