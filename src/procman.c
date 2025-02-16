@@ -411,6 +411,8 @@ static void pm_reap_terminated_process(procman *pm) {
             /* The process here should always be managed by us */
             assert(p != NULL);
             
+
+            /* Status indicates termination normally or by signal */
             if (WIFEXITED(status) || WIFSIGNALED(status)) {
                 pm_remove_running_process(pm, p);
                 p->status = TERMINATED;
