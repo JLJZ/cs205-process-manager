@@ -22,6 +22,7 @@ prog: $(SRC_DIR)/prog.c
 .PHONY: clean
 clean:
 	rm -f $(EXE)
+	rm -f $(BUILD_DIR)/prog
 
 # Test with prog
 .PHONY:
