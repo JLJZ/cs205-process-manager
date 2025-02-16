@@ -323,7 +323,15 @@ static void dispatch(procman *pm, args *a) {
             pid_t pid = parse_pid(a->argv[1]);
             process *p = find_process(pm->processes, pid);
             if (p) {
-                pm_server_stop_process(pm, p);
+                if (p->status == TERMINATED) {
+                    fprintf(stderr, "Already terminated (%d)\n", pid);
+                } else if (p->status == STOPPED) {
+                    fprintf(stderr, "Already stopped (%d)\n", pid);
+                } else {
+                    pm_server_stop_process(pm, p);
+                }
+            } else {
+                fprintf(stderr, "PID not found (%d)\n", pid);
             }
         }
 
@@ -332,7 +340,13 @@ static void dispatch(procman *pm, args *a) {
             pid_t pid = parse_pid(a->argv[1]);
             process *p = find_process(pm->processes, pid);
             if (p) {
-                pm_server_terminate_process(pm, p);
+                if (p->status == TERMINATED) {
+                    fprintf(stderr, "Already terminated (%d)\n", pid);
+                } else {
+                    pm_server_terminate_process(pm, p);
+                }
+            } else {
+                fprintf(stderr, "PID not found (%d)\n", pid);
             }
         }
 
@@ -341,7 +355,17 @@ static void dispatch(procman *pm, args *a) {
             pid_t pid = parse_pid(a->argv[1]);
             process *p = find_process(pm->processes, pid);
             if (p) {
-                pm_server_resume_process(p);
+                if (p->status == RUNNING) {
+                    fprintf(stderr, "Already running (%d)\n", pid);
+                } else if (p->status == READY) {
+                    fprintf(stderr, "Already ready (%d)\n", pid);
+                } else if (p->status == TERMINATED) {
+                    fprintf(stderr, "Already terminated (%d)\n", pid);
+                } else {
+                    pm_server_resume_process(p);
+                }
+            } else {
+                fprintf(stderr, "PID not found (%d)\n", pid);
             }
         }
 
