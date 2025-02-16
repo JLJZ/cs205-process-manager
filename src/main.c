@@ -3,11 +3,15 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/wait.h>
+
+#include <assert.h>
 
 #include "procman.h"
 
 #define MAX_RUNNING_PROCESSES 3
+#define BUFFER_SIZE 64
 
 /**
  * @brief Read a command from stdin
@@ -15,37 +19,55 @@
  * @return char* Command string
  */
 static char *read_line(void) {
-    char *input = NULL;
-    size_t len = 0;
+    char buffer[BUFFER_SIZE];
     
-    ssize_t read_len = getline(&input, &len, stdin);
-
-    if (read_len < 0) {
-        exit(EXIT_FAILURE);
+    char* read_str = NULL;
+    size_t str_len = 0;
+    
+    /* Collect characters until EOL */
+    while (fgets(buffer, BUFFER_SIZE, stdin) != NULL) {
+        size_t read_count = strlen(buffer);
+        read_str = realloc(read_str, (str_len + read_count + 1) * sizeof(char));
+        memcpy(read_str + str_len, buffer, read_count * sizeof(char));
+        str_len += read_count;
     }
     
-    /* Delete newline character */
-    input[read_len - 1] = '\0';
+    if (read_str != NULL) {
+        /* Remove newline character */
+        read_str[str_len - 1] = '\0'; 
+    }
 
-    return input;
+    return read_str;
 }
 
 int main(void) {
+    /* Set non-blocking reads from standard input */
+    fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
+
     procman pm;
     pm_init(&pm, MAX_RUNNING_PROCESSES);
+    
+    bool prompt_needed = true;
+    bool is_running = true;
 
-    while (true) {
-        printf("cs205$ ");
+    while (is_running) {
+        if (prompt_needed) {
+            printf("cs205$ ");
+            prompt_needed = false;
+        }
+
         char *command = read_line();
         
-        if (!strcmp("exit", command)) {
-            free(command);
-            break;
+        if (command != NULL) {
+            is_running = strcmp("exit", command) != 0;
+            prompt_needed = true;
         }
         
         pm_run(&pm, command);
 
-        free(command);
+        if (command != NULL) {
+            free(command);
+        }
     }
     
     pm_shutdown(&pm);
