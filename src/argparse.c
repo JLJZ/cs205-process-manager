@@ -86,21 +86,19 @@ void args_parse(args *a, const char *str) {
     
     /* Add '\0' after every token and trim additonal whitespace between them. */
     while (*str != '\0') {
-        if (*str == ' ') {
-            buffer[len++] = '\0';
-            /* Skip contiguous whitespaces */
-            while (*str == ' ') {
-                str++;
-            }
-
-        } else {
+        /* Skip contiguous whitespaces */
+        while (*str == ' ') {
+            str++;
+        }
+        while (*str != ' ' && *str != '\0') {
             buffer[len++] = *str;
             str++;
         }
+        buffer[len++] = '\0';
     }
     
-    /* Length of bytes + 2 additional null terminator */
-    len += 2;
+    /* Length of bytes + 1 additional null terminator */
+    len += 1;
     
     buffer = realloc(buffer, len * sizeof(char));
     
