@@ -15,6 +15,13 @@
 
 #define BUFFER_SIZE 64
 
+#define USAGE "COMMANDS:\n"                     \
+              "    run [program] [arguments]\n" \
+              "    stop [PID]\n"                \
+              "    kill [PID]\n"                \
+              "    resume [PID]\n"              \
+              "    list\n"                      \
+              "    exit\n"
 
 /******************************************************************************
  *                                 UTILITIES                                  * 
@@ -277,7 +284,8 @@ static void dispatch(procman *pm, args *a) {
         exit(EXIT_SUCCESS);
 
     } else {
-        fprintf(stderr, "Unrecognised command\n");
+
+        fprintf(stderr, USAGE);
     }
 }
 
