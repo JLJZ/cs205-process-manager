@@ -20,7 +20,7 @@ static char *read_input(void) {
     char* read_str = NULL;
     size_t str_len = 0;
     
-    /* Collect characters until EOL */
+    /* Collect characters until EOF */
     while (fgets(buffer, BUFFER_SIZE, stdin) != NULL) {
         size_t read_count = strlen(buffer);
         read_str = realloc(read_str, (str_len + read_count + 1) * sizeof(char));
