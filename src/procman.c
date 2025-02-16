@@ -11,7 +11,7 @@
 #include "procman.h"
 #include "argparse.h"
 
-#define error(msg) do { perror("[procman-server] " msg); } while (0);
+#define error(msg) do { perror("[error] " msg); } while (0);
 
 #define USAGE "COMMANDS:\n"                     \
               "    run [program] [arguments]\n" \
