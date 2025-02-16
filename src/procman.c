@@ -21,11 +21,19 @@
               "    list\n"                      \
               "    exit\n"
 
+
 /******************************************************************************
  *                                 UTILITIES                                  * 
  ******************************************************************************/
 
 
+/**
+ * @brief Search a chain of processes for specified pid.
+ * 
+ * @param processes Beginning of process chain
+ * @param pid Target pid
+ * @return process* The process with target pid. NULL if no processes found
+ */
 static process *find_process(process *processes, pid_t pid) {
     for (process *p = processes; p != NULL; p = p->next) {
         /* Assuming there are never duplicated pid stored */
@@ -37,14 +45,25 @@ static process *find_process(process *processes, pid_t pid) {
     return NULL;
 }
 
+/**
+ * @brief Links a process to the end of process chain. 
+ * 
+ * @warning No checks are done to prevent cycles in the chain if a duplicate
+ * process is added.
+ *
+ * @param pm Target process manager
+ * @param p The process to link
+ */
 static void pm_enqueue_process(procman *pm, process *p) {
+    /* Add process as first in chain */
     if (pm->processes == NULL) {
         p->next = NULL;
         p->previous = NULL;
         pm->processes = p;
         pm->last_process = p;
 
-    } else {
+    } else { /* Add process to the tail of the chain */
+
         pm->last_process->next = p;
         p->previous = pm->last_process;
         p->next = NULL;
