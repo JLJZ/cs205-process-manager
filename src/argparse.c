@@ -32,7 +32,7 @@ static size_t count_tokens(const char *bytes) {
 }
 
 /**
- * @brief 
+ * @brief Create an argv array from a given byte string representation.
  * 
  * @param bytes Source data ended with a null character
  * @param token_count Number of tokens in bytes
