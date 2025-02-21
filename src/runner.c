@@ -2,15 +2,10 @@
 #include <stdbool.h>
 #include <fcntl.h>
 
+#include "runner.h"
 #include "procman.h"
 
 #define error(msg) do { perror("[error] " msg); } while (0);
-
-typedef struct runner {
-    int pipe[2];
-    int worker_pid;
-    procman *pm;
-} runner;
 
 /**
  * @brief Start the main loop of a worker runner
