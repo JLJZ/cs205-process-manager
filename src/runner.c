@@ -35,7 +35,7 @@ static void rn_start_worker(runner *rn) {
  * 
  * @param rn Target runner
  * @param pm_max_running_processes Max number of running processes
- * @return int 0 if successful. 1 otherwise
+ * @return int 0 if successful. -1 otherwise
  */
 int rn_init(runner *rn, int pm_max_running_processes) {
     rn->pm = NULL;
