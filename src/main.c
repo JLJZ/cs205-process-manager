@@ -4,37 +4,12 @@
 #include <string.h>
 #include <fcntl.h>
 
+#include "input.h"
 #include "procman.h"
 
 #define MAX_RUNNING_PROCESSES 3
 #define BUFFER_SIZE 64
 
-/**
- * @brief Read input from stdin
- * 
- * @return char* User input
- */
-static char *read_input(void) {
-    char buffer[BUFFER_SIZE];
-    
-    char* read_str = NULL;
-    size_t str_len = 0;
-    
-    /* Collect characters until EOF */
-    while (fgets(buffer, BUFFER_SIZE, stdin) != NULL) {
-        size_t read_count = strlen(buffer);
-        read_str = realloc(read_str, (str_len + read_count + 1) * sizeof(char));
-        memcpy(read_str + str_len, buffer, read_count * sizeof(char));
-        str_len += read_count;
-    }
-    
-    if (read_str != NULL) {
-        /* Remove newline character */
-        read_str[str_len - 1] = '\0'; 
-    }
-
-    return read_str;
-}
 
 /**
  * @brief Split string by linefeed. Not re-entrant because of internal strtok()
@@ -82,7 +57,7 @@ int main(void) {
         }
 
         /* Get input from stdin */
-        char *input = read_input();
+        char *input = read_all(stdin, BUFFER_SIZE);
         prompt_needed = input != NULL;
 
         /* Split input by \n and process them as separate commands.
