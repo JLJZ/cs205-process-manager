@@ -13,4 +13,6 @@ int rn_init(runner *rn, int pm_max_running_processes);
 
 int rn_send_input(runner *rn, const char *input);
 
+int rn_free(runner *rn);
+
 #endif

@@ -79,3 +79,18 @@ int rn_send_input(runner *rn, const char *input) {
     
     return 0;
 }
+
+/**
+ * @brief Free resources used by runner
+ * 
+ * @param rn Target runner
+ * @return int 
+ */
+int rn_free(runner *rn) {
+    if (close(rn->pipe[1]) < 0) {
+        error("failed to close pipe");
+        return -1;
+    }
+
+    return 0;
+}
