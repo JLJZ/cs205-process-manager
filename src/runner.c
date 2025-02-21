@@ -68,7 +68,14 @@ int rn_init(runner *rn, int pm_max_running_processes) {
 /**
  * @brief Send input to the process runner
  * 
- * @param input 
+ * @param input String input
+ * @return int 0 if successful. -1 otherwise
  */
-void rn_send_input(runner *rn, const char *input) {
+int rn_send_input(runner *rn, const char *input) {
+    if (write(rn->pipe[1], input, strlen(input) + 1) < 0) {
+        error("failed to write pipe");
+        return -1;
+    }
+    
+    return 0;
 }
