@@ -1,10 +1,13 @@
+#include <stdlib.h>
 #include <unistd.h>
 #include <stdbool.h>
 #include <fcntl.h>
 
 #include "runner.h"
+#include "input.h"
 #include "procman.h"
 
+#define BUFFER_SIZE 64
 #define error(msg) do { perror("[error] " msg); } while (0);
 
 /**
@@ -13,6 +16,18 @@
  * @param rn Target runner
  */
 static void rn_start_worker(runner *rn) {
+    bool is_running = true;
+    while (is_running) {
+        const char *input = read_all(rn->pipe[1], BUFFER_SIZE);
+        pm_send_command(rn->pm, input);
+        is_running = strcmp("exit", input) != 0;
+        free(input);
+    }
+    
+    close(rn->pipe[0]);
+    pm_shutdown(rn->pm);
+    free(rn->pm);
+    rn->pm = NULL;
 }
 
 /**
@@ -42,7 +57,7 @@ int rn_init(runner *rn, int pm_max_running_processes) {
             fcntl(rn->pipe[0], F_SETFL, O_NONBLOCK);
 
             rn_start_worker(rn);
-            return 0;
+            exit(EXIT_SUCCESS);
 
         default: /* Prepare pipe write-end */
             close(rn->pipe[0]);
