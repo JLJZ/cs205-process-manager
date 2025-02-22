@@ -1,36 +1,37 @@
 # CS205 - Operating Systems Assignment 2
 
-Description: A process managing command line interactive shell
+Description: A CLI process manager
 
-## Source
-
-```
+```text
 ├── Makefile
-├── README.md
 ├── build.sh
+├── README.md
 └── src
     ├── argparse.c
     ├── argparse.h
     ├── main.c
     ├── procman.c
-    ├── procman.h
+    ├── procman.c
+    ├── input.h
+    ├── input.c
     └── prog.c
 ```
 
-### Inside ./src
+## Inside ./src
 
 - `main.c` - main entry point and user input
 - `procman.c` - process manager
 - `argparse.c` - command parsing
+- `input.c` - file descriptor reading utilities
 
-### Using `build.sh`
+## Using `build.sh`
 
 ```sh
 chmod +x ./build.sh
 ./build.sh
 ```
 
-### Using `make`
+## Using `make`
 
 ```sh
 make prog
