@@ -34,7 +34,7 @@ char *read_all(int fd, size_t buffer_size, char terminator) {
             if (buffer[i] == terminator) {
                 terminator_found = true;
                 buffer[i] = '\0';
-                read_len = i;
+                read_len = i + 1;
                 break;
             }
         }
