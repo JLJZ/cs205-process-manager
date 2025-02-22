@@ -6,6 +6,6 @@
  * 
  * @return char* Read string
  */
-char *read_all(int fd, size_t buffer_size);
+char *read_all(int fd, size_t buffer_size, char terminator);
 
 #endif

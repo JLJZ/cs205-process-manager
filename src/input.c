@@ -1,6 +1,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
 
 #include "input.h"
 
@@ -9,7 +11,7 @@
  * 
  * @return char* Read string
  */
-char *read_all(int fd, size_t buffer_size) {
+char *read_all(int fd, size_t buffer_size, char terminator) {
     static const size_t default_buffer_size = 64;
 
     if (buffer_size <= 0) {
@@ -22,21 +24,24 @@ char *read_all(int fd, size_t buffer_size) {
     size_t str_len = 0;
     ssize_t read_len = 0;
     
+    bool terminator_found = false;
+    
     /* Collect characters until EOF */
-    while ((read_len = read(fd, buffer, buffer_size)) > 0) {
-        read_str = realloc(read_str, (str_len + (size_t)read_len + 1) * sizeof(char));
+    while (!terminator_found && (read_len = read(fd, buffer, buffer_size)) > 0)
+    {
+        /* Search for our terminator */
+        for (ssize_t i = 0; i < read_len; ++i) {
+            if (buffer[i] == terminator) {
+                terminator_found = true;
+                buffer[i] = '\0';
+                read_len = i;
+                break;
+            }
+        }
+
+        read_str = realloc(read_str, (str_len + (size_t)read_len));
         memcpy(read_str + str_len, buffer, (size_t)read_len);
         str_len += (size_t)read_len;
-    }
-    
-    if (read_str != NULL) {
-        /* Set null terminator */
-        read_str[str_len] = '\0';
-
-        /* Remove newline character */
-        if (read_str[str_len - 1] == '\n') {
-            read_str[str_len - 1] = '\0'; 
-        }
     }
 
     return read_str;

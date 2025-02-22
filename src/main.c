@@ -43,19 +43,19 @@ static char **split_lines(char *str, size_t *count) {
 
 int main(void) {
     runner rn;
-    rn_init(&rn, MAX_RUNNING_PROCESSES);
+    if (rn_init(&rn, MAX_RUNNING_PROCESSES) < 0) {
+        perror("failed to start");
+        exit(EXIT_FAILURE);
+    };
     
-    bool prompt_needed = true;
     bool is_running = true;
 
     while (is_running) {
-        if (prompt_needed) {
-            printf("cs205$ ");
-        }
+        printf("cs205$ ");
+        fflush(stdout);
 
         /* Get input from stdin */
-        char *input = read_all(STDIN_FILENO, BUFFER_SIZE);
-        prompt_needed = input != NULL;
+        char *input = read_all(STDIN_FILENO, BUFFER_SIZE, '\n');
 
         /* Split input by \n and process them as separate commands.
          * This may happen when piping a file into the program or

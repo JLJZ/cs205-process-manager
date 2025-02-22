@@ -20,7 +20,7 @@
 static void rn_start_worker(runner *rn) {
     bool is_running = true;
     while (is_running) {
-        char *input = read_all(rn->pipe[1], BUFFER_SIZE);
+        char *input = read_all(rn->pipe[0], BUFFER_SIZE, '\0');
         pm_send_command(rn->pm, input);
         is_running = strcmp("exit", input) != 0;
         free(input);
@@ -56,7 +56,7 @@ int rn_init(runner *rn, size_t pm_max_running_processes) {
 
             /* Setup non-blocking pipe read-end */
             close(rn->pipe[1]);
-            fcntl(rn->pipe[0], F_SETFL, O_NONBLOCK);
+            fcntl(rn->pipe[0], F_SETFD, O_NONBLOCK);
 
             rn_start_worker(rn);
             exit(EXIT_SUCCESS);
@@ -75,7 +75,6 @@ int rn_init(runner *rn, size_t pm_max_running_processes) {
  */
 int rn_send_input(runner *rn, const char *input) {
     if (write(rn->pipe[1], input, strlen(input) + 1) < 0) {
-        error("failed to write pipe");
         return -1;
     }
     
