@@ -66,7 +66,8 @@ int main(void) {
         char **commands = split_lines(input, &command_count);
         
         for (size_t i = 0; i < command_count; ++i) {
-            is_running = rn_send_input(&rn, commands[i]) == 0;
+            rn_send_input(&rn, commands[i]);
+            is_running = strcmp("exit", commands[i]) != 0;
             if (!is_running) {
                 break;
             }
@@ -77,7 +78,9 @@ int main(void) {
             free(commands);
         }
 
-        sleep(POLLING_INTERVAL);
+        if (is_running) {
+            sleep(POLLING_INTERVAL);
+        }
     }
 
     rn_free(&rn);

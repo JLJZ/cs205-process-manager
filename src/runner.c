@@ -4,11 +4,13 @@
 #include <fcntl.h>
 #include <string.h>
 #include <stdio.h>
+#include <sys/wait.h>
 
 #include "runner.h"
 #include "input.h"
 #include "procman.h"
 
+#define COMMAND_STOP_WORKER "exit"
 #define BUFFER_SIZE 64
 #define error(msg) do { perror("[error] " msg); } while (0);
 
@@ -28,7 +30,7 @@ static void rn_start_worker(runner *rn) {
     while (is_running) {
         char *input = read_all(rn->pipe[0], BUFFER_SIZE, '\0');
         pm_send_command(rn->pm, input);
-        is_running = strcmp("exit", input) != 0;
+        is_running = strcmp(COMMAND_STOP_WORKER, input) != 0;
         pm_run(rn->pm);
         free(input);
     }
@@ -105,6 +107,8 @@ int rn_free(runner *rn) {
         error("failed to close pipe");
         return -1;
     }
-
+    
+    rn_send_input(rn, COMMAND_STOP_WORKER);
+    waitpid(rn->worker_pid, NULL, 0);
     return 0;
 }
