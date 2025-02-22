@@ -71,7 +71,7 @@ int rn_init(runner *rn, size_t pm_max_running_processes) {
 
             /* Setup non-blocking pipe read-end */
             close(rn->pipe[1]);
-            fcntl(rn->pipe[0], F_SETFD, O_NONBLOCK);
+            fcntl(rn->pipe[0], F_SETFL, O_NONBLOCK);
 
             rn_start_worker(rn);
             exit(EXIT_SUCCESS);
