@@ -12,6 +12,12 @@
 #define BUFFER_SIZE 64
 #define error(msg) do { perror("[error] " msg); } while (0);
 
+
+/******************************************************************************
+ *                                 UTILITIES                                  * 
+ ******************************************************************************/
+
+
 /**
  * @brief Start the main loop of a worker runner
  * 
@@ -32,6 +38,12 @@ static void rn_start_worker(runner *rn) {
     free(rn->pm);
     rn->pm = NULL;
 }
+
+
+/******************************************************************************
+ *                             PUBLIC INTERFACE                               * 
+ ******************************************************************************/
+
 
 /**
  * @brief Initialise the runner with a corresponding background worker process
