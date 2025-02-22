@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
-#include <fcntl.h>
 
 #include "input.h"
 #include "runner.h"
