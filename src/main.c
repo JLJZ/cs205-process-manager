@@ -82,5 +82,5 @@ int main(void) {
 
     rn_free(&rn);
 
-    return 0;
+    return EXIT_SUCCESS;
 }
