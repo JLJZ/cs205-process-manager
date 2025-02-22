@@ -29,10 +29,12 @@ static void rn_start_worker(runner *rn) {
     bool is_running = true;
     while (is_running) {
         char *input = read_all(rn->pipe[0], BUFFER_SIZE, '\0');
-        pm_send_command(rn->pm, input);
-        is_running = strcmp(COMMAND_STOP_WORKER, input) != 0;
+        if (input != NULL) {
+            pm_send_command(rn->pm, input);
+            is_running = strcmp(COMMAND_STOP_WORKER, input) != 0;
+            free(input);
+        }
         pm_run(rn->pm);
-        free(input);
     }
     
     close(rn->pipe[0]);

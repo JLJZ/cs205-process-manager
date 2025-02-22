@@ -14,7 +14,7 @@
  * 64 bytes if 0 specified
  * @param terminator Stop reading when terminator is reached. Not included in
  * the output string
- * @return char* Read string
+ * @return char* Read string. Null if nothing read
  */
 char *read_all(int fd, size_t buffer_size, char terminator) {
     static const size_t default_buffer_size = 64;
