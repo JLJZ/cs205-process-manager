@@ -23,6 +23,7 @@ static void rn_start_worker(runner *rn) {
         char *input = read_all(rn->pipe[0], BUFFER_SIZE, '\0');
         pm_send_command(rn->pm, input);
         is_running = strcmp("exit", input) != 0;
+        pm_run(rn->pm);
         free(input);
     }
     
