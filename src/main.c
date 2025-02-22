@@ -5,7 +5,7 @@
 #include <fcntl.h>
 
 #include "input.h"
-#include "procman.h"
+#include "runner.h"
 
 #define MAX_RUNNING_PROCESSES 3
 #define BUFFER_SIZE 64
@@ -42,11 +42,8 @@ static char **split_lines(char *str, size_t *count) {
 }
 
 int main(void) {
-    /* Set non-blocking reads from standard input */
-    fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
-
-    procman pm;
-    pm_init(&pm, MAX_RUNNING_PROCESSES);
+    runner rn;
+    rn_init(&rn, MAX_RUNNING_PROCESSES);
     
     bool prompt_needed = true;
     bool is_running = true;
@@ -57,7 +54,7 @@ int main(void) {
         }
 
         /* Get input from stdin */
-        char *input = read_all(stdin, BUFFER_SIZE);
+        char *input = read_all(STDIN_FILENO, BUFFER_SIZE);
         prompt_needed = input != NULL;
 
         /* Split input by \n and process them as separate commands.
@@ -68,14 +65,11 @@ int main(void) {
         char **commands = split_lines(input, &command_count);
         
         for (size_t i = 0; i < command_count; ++i) {
-            is_running = strcmp("exit", commands[i]) != 0;
-            pm_send_command(&pm, commands[i]);
+            is_running = rn_send_input(&rn, commands[i]) == 0;
             if (!is_running) {
                 break;
             }
         }
-
-        pm_run(&pm);
 
         if (command_count > 0) {
             free(input);
@@ -83,7 +77,7 @@ int main(void) {
         }
     }
 
-    pm_shutdown(&pm);
+    rn_free(&rn);
 
     return 0;
 }

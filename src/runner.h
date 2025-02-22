@@ -9,7 +9,7 @@ typedef struct runner {
     procman *pm;
 } runner;
 
-int rn_init(runner *rn, int pm_max_running_processes);
+int rn_init(runner *rn, size_t pm_max_running_processes);
 
 int rn_send_input(runner *rn, const char *input);
 

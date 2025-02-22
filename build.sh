@@ -9,7 +9,7 @@ EXE=$BUILD_DIR/shell
 mkdir -p $BUILD_DIR
 
 # Compile main executable test binary
-SRC="$SRC_DIR/main.c $SRC_DIR/argparse.c $SRC_DIR/procman.c"
+SRC="$SRC_DIR/main.c $SRC_DIR/argparse.c $SRC_DIR/procman.c $SRC_DIR/runner.c $SRC_DIR/input.c"
 $CC $CFLAGS $SRC -o $EXE
 
 # Compile prog test binary

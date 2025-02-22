@@ -5,7 +5,7 @@ SRC_DIR := ./src
 BUILD_DIR := ./bin
 EXE := ${BUILD_DIR}/shell
 
-SRC = $(SRC_DIR)/main.c $(SRC_DIR)/argparse.c $(SRC_DIR)/procman.c
+SRC = $(SRC_DIR)/main.c $(SRC_DIR)/argparse.c $(SRC_DIR)/procman.c $(SRC_DIR)/runner.c $(SRC_DIR)/input.c
 	
 
 all: $(EXE)

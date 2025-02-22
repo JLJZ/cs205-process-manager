@@ -2,6 +2,8 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <fcntl.h>
+#include <string.h>
+#include <stdio.h>
 
 #include "runner.h"
 #include "input.h"
@@ -18,7 +20,7 @@
 static void rn_start_worker(runner *rn) {
     bool is_running = true;
     while (is_running) {
-        const char *input = read_all(rn->pipe[1], BUFFER_SIZE);
+        char *input = read_all(rn->pipe[1], BUFFER_SIZE);
         pm_send_command(rn->pm, input);
         is_running = strcmp("exit", input) != 0;
         free(input);
@@ -37,7 +39,7 @@ static void rn_start_worker(runner *rn) {
  * @param pm_max_running_processes Max number of running processes
  * @return int 0 if successful. -1 otherwise
  */
-int rn_init(runner *rn, int pm_max_running_processes) {
+int rn_init(runner *rn, size_t pm_max_running_processes) {
     rn->pm = NULL;
     if (pipe(rn->pipe) < 0) {
         return -1;
