@@ -8,6 +8,7 @@
 #include "runner.h"
 
 #define MAX_RUNNING_PROCESSES 3
+#define POLLING_INTERVAL 1
 #define BUFFER_SIZE 64
 
 
@@ -75,6 +76,8 @@ int main(void) {
             free(input);
             free(commands);
         }
+
+        sleep(POLLING_INTERVAL);
     }
 
     rn_free(&rn);
