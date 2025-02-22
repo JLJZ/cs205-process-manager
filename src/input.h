@@ -13,4 +13,16 @@
  */
 char *read_all(int fd, size_t buffer_size, char terminator);
 
+/**
+ * @brief Split string by linefeed. Not re-entrant because of internal strtok()
+ * 
+ * @param str Input string to split. Mutates the string
+ * @param[out] count Return value of the number of lines parsed
+ * @return char** List of strings lines
+ * 
+ * @note The array returned has to be freed, but no memory is allocated for
+ * its items. Deallocate the passed in string argument to free all the items. 
+ */
+char **split_lines(char *str, size_t *count);
+
 #endif
