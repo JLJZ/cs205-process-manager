@@ -6,7 +6,6 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <sys/wait.h>
-#include <sys/prctl.h>
 
 #include "procman.h"
 #include "argparse.h"
@@ -167,8 +166,6 @@ static void pm_resume_process(process *p) {
  * must be NULL to indicate the end of the array
  */
 static void pm_spawn_process(procman *pm, char *const argv[]) {
-
-    pid_t parent_pid = getpid();
     pid_t child_pid = fork();
 
     switch (child_pid) {
@@ -177,18 +174,6 @@ static void pm_spawn_process(procman *pm, char *const argv[]) {
         return;
 
     case 0: {
-
-        /* Send SIGTERM to child when parent dies  */
-        if (prctl(PR_SET_PDEATHSIG, SIGTERM) < 0) {
-            error("Failed to link parent death signal");
-            exit(EXIT_FAILURE);
-        }
-        
-        if (getppid() != parent_pid) {
-            /* Parent died before prctl() */
-            exit(EXIT_FAILURE);
-        }
-
         /* Suspend process to wait for parent to resume it before execvp() */
         if (raise(SIGSTOP) == 0) {
             if (execvp(argv[0], argv) < 0) {
