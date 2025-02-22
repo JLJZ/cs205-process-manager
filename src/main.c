@@ -27,29 +27,15 @@ int main(void) {
 
         /* Get input from stdin */
         char *input = read_all(STDIN_FILENO, BUFFER_SIZE, '\n');
-
-        /* Split input by \n and process them as separate commands.
-         * This may happen when piping a file into the program or
-         * a user pasting a recipe into the prompt.
-         */
-        size_t command_count = 0;
-        char **commands = split_lines(input, &command_count);
         
-        for (size_t i = 0; i < command_count; ++i) {
-            rn_send_input(&rn, commands[i]);
-            is_running = strcmp("exit", commands[i]) != 0;
-            if (!is_running) {
-                break;
-            }
-        }
+        is_running = strcmp("exit", input) != 0;
 
-        if (command_count > 0) {
+        if (input && strlen(input) > 0) {
+            rn_send_input(&rn, input);
             free(input);
-            free(commands);
-        }
-
-        if (is_running) {
-            sleep(POLLING_INTERVAL);
+            if (is_running) {
+                sleep(POLLING_INTERVAL);
+            }
         }
     }
 
