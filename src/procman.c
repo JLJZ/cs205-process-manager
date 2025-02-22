@@ -379,29 +379,28 @@ static void dispatch(procman *pm, args *a) {
 static void pm_reap_terminated_process(procman *pm) {
     int status = 0;
 
-    for (process *p = pm->processes; p != NULL; p = p->next) {
-        pid_t pid = waitpid(p->pid, &status, WNOHANG);
-        
-        /* No-op if waitpid return -1 or 0 */
-        switch (pid) {
-            case -1:
-                if (ECHILD != errno) {  /* Ignore if there's no children */
-                    perror("wait() failed");
-                }
-            case 0:
-                return;
+    pid_t pid = waitpid(-1, &status, WNOHANG);
+    
+    /* No-op if waitpid return -1 or 0 */
+    switch (pid) {
+        case -1:
+            if (ECHILD != errno) {  /* Ignore if there's no children */
+                perror("wait() failed");
+            }
+        case 0:
+            return;
 
-            default: { /* A process has terminated */
-                process *p = find_process(pm->processes, pid);
+        default: { /* A process has terminated */
+            process *p = find_process(pm->processes, pid);
 
-                /* The process here should always be managed by us */
-                assert(p != NULL);
+            /* The process here should always be managed by us */
+            assert(p != NULL);
+            
 
-                /* Status indicates termination normally or by signal */
-                if (WIFEXITED(status) || WIFSIGNALED(status)) {
-                    pm_remove_running_process(pm, p);
-                    p->status = TERMINATED;
-                }
+            /* Status indicates termination normally or by signal */
+            if (WIFEXITED(status) || WIFSIGNALED(status)) {
+                pm_remove_running_process(pm, p);
+                p->status = TERMINATED;
             }
         }
     }
