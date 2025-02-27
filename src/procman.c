@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <signal.h>
 #include <assert.h>
 #include <errno.h>
 #include <stdbool.h>
@@ -183,6 +182,7 @@ static void pm_spawn_process(procman *pm, char *const argv[]) {
                 strcpy(msg, "error running ");
                 strcat(msg, argv[0]);
                 perror(msg);
+                free(msg);
             }
         }
 
